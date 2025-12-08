@@ -21,6 +21,9 @@ fi
 
 echo "192.168.173.107 se-repo.ai3">> /etc/hosts
 
+mkdir -p /etc/yum.repos.d/backup
+mv /etc/yum.repos.d/*repo /etc/yum.repos.d/backup
+
 cat > /etc/yum.repos.d/ai3.repo <<'EOF'
 [baseos]
 name=Rocky Linux $releasever - BaseOS
@@ -29,7 +32,7 @@ baseurl=http://se-repo.ai3/rocky/$contentdir/$releasever/BaseOS/$basearch/os/
 gpgcheck=1
 enabled=1
 countme=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
 
 [appstream]
 name=Rocky Linux $releasever - AppStream
@@ -38,5 +41,5 @@ baseurl=http://se-repo.ai3/rocky/$contentdir/$releasever/AppStream/$basearch/os/
 gpgcheck=1
 enabled=1
 countme=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-rockyofficial
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-9
 EOF

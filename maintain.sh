@@ -4,16 +4,18 @@
 dir="/home/ecp/"
 #執行前磁碟大小
 disk_before=$(df -k "$dir" | awk 'NR==2 {print $3}')
+#備份目錄位置
+backup="/home/ecp/backup/"
+#服務名稱
+service_name="ecp"
 
 #備份服務
-mkdir -p ${dir}backup
-tar czvf ${dir}backup/ecp_$(date +"%Y%m%d")_bak.tar.gz --exclude=${dir}/ecp/apache-tomcat/logs/* --exclude=${dir}/ecp/apache-tomcat/extension/ecp/log/* --exclude=${dir}/ecp/tool/sql ${dir}/ecp/
-
+mkdir -p $backup
+tar --wildcards -czvf ${backup}${service_name}_$(date +"%Y%m%d")_bak.tar.gz --exclude=${dir}${service_name}/apache-tomcat/logs/* --exclude=${dir}${service_name}/apache-tomcat/extension/*/log/* --exclude=${dir}${service_name}/tool/sql ${dir}${service_name}/
 #清除超過半年的備份
-find ${dir}backup -type f -mtime +180 -exec rm -f {} \;
+find ${backup} -type f -mtime +180 -exec rm -f {} \;
 #清除超過三個月的log
-find ${dir}/ecp/apache-tomcat/extension/ecp/log -type d -mtime +90 -exec rm -rf {} \;
-
+find ${dir}${service_name}/apache-tomcat/extension/*/log -type d -mtime +90 -exec rm -rf {} \;
 #執行後磁碟大小
 disk_after=$(df -k "$dir" | awk 'NR==2 {print $3}')
 
@@ -33,15 +35,15 @@ else
 fi
 
 #將系統資訊寫入maintain.log
-touch ${dir}/ecp/maintain.log
-: > ${dir}/ecp/maintain.log
-echo "=== Disk Usage ===" >> ${dir}/ecp/maintain.log
-df -h >> ${dir}/ecp/maintain.log
-echo "=== Memory Usage ===" >> ${dir}/ecp/maintain.log
-free -h >> ${dir}/ecp/maintain.log
-echo "=== Top Processes ===" >> ${dir}/ecp/maintain.log
-top -b -n 1 | head -n 5 >> ${dir}/ecp/maintain.log
-echo "=== Clean Disk ===" >> ${dir}/ecp/maintain.log
-echo "Freed up space: ${freed} ${unit}" >> ${dir}/ecp/maintain.log
+touch ${dir}${service_name}/maintain.log
+: > ${dir}${service_name}/maintain.log
+echo "=== Disk Usage ===" >> ${dir}${service_name}/maintain.log
+df -h >> ${dir}${service_name}/maintain.log
+echo "=== Memory Usage ===" >> ${dir}${service_name}/maintain.log
+free -h >> ${dir}${service_name}/maintain.log
+echo "=== Top Processes ===" >> ${dir}${service_name}/maintain.log
+top -b -n 1 | head -n 5 >> ${dir}${service_name}/maintain.log
+echo "=== Clean Disk ===" >> ${dir}${service_name}/maintain.log
+echo "Freed up space: ${freed} ${unit}" >> ${dir}${service_name}/maintain.log
 clear
-cat ${dir}/ecp/maintain.log
+cat ${dir}${service_name}/maintain.log
