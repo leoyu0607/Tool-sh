@@ -3,12 +3,13 @@
 # for twlife cbm&pm2
 
 LOG="/home/ecp/ai3_resource_monitor.log"
-INTERVAL=10 # in seconds
-MAX_LOG_SIZE=$((10 * 1024 * 1024)) # 10MB
-MAX_LOG_ARCHIVES=5
+INTERVAL=10 # 執行間隔per second
+MAX_LOG_SIZE=$((100 * 1024 * 1024)) # 100MB
+MAX_LOG_ARCHIVES=5 #Log檔數量上限
 touch $LOG
 chmod 664 $LOG
 
+#Log輪轉
 rotate_logs() {
     if [[ -f "${LOG}.${MAX_LOG_ARCHIVES}.gz" ]]; then
         rm -f "${LOG}.${MAX_LOG_ARCHIVES}.gz"
@@ -27,6 +28,7 @@ rotate_logs() {
     fi
 }
 
+#判斷是否輪轉
 maybe_rotate_logs() {
     if [[ -f "$LOG" ]]; then
         local size
@@ -37,11 +39,13 @@ maybe_rotate_logs() {
     fi
 }
 
+#Log寫入，等同echo，但可視需求增加在每次Log寫入時的執行的動作
 log_append() {
-    maybe_rotate_logs
+    #maybe_rotate_logs
     printf "%s\n" "$1" >> "$LOG"
 }
 
+#監控PM2資源使用狀況
 pm2_resource_monitor() {
     log_append "$timestamp [PM2] resource usage by PM2:"
     pm2 jlist | jq -r '
@@ -57,7 +61,7 @@ ram_top5_processes() {
     log_append "$timestamp [RAM] Top 5 processes by RAM:"
     ps -eo pid,comm,rss --sort=-rss | head -n 6 | tail -n 5 | awk '{printf("PID: %s, Command: %s, RAM: %.2f MB\n", $1, $2, $3/1024)}'
 }
-
+#記錄當下可用記憶體
 log_available_memory() {
     local available
     available=$(awk '/MemAvailable/ { printf("%.2f MB", $2 / 1024) }' /proc/meminfo)
@@ -80,5 +84,6 @@ while true; do
     done
     log_available_memory
     log_append "----------------------------------------"
+    maybe_rotate_logs
     sleep $INTERVAL
 done
