@@ -10,7 +10,7 @@ uname -m > $dnf_var/basearch
 #判斷OS版本
 MAJOR="${VERSION_ID%%.*}"   # 例如 8 或 9
 MINOR="${VERSION_ID##*.}"   # 例如 10
-LATEST_MINOR=( [8]=10 [9]=6 )
+LATEST_MINOR=( [8]=10 [9]=7 )
 if [[ -n "${LATEST_MINOR[$MAJOR]:-}" && "$MINOR" -lt "${LATEST_MINOR[$MAJOR]}" ]]; then
     # 舊版本 → vault
     echo "vault/rocky" > $dnf_var/contentdir

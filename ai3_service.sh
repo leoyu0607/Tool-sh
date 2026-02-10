@@ -191,6 +191,7 @@ while true; do
     echo "[1] 啟動服務"
     echo "[2] 停止服務"
     echo "[3] 確認服務狀態"
+    echo "[4] 重啟服務"
     read -rp "輸入操作編號: " action_index
     case $action_index in
         1)
@@ -203,6 +204,11 @@ while true; do
             ;;
         3)
             qs_status "$selected_service"
+            read -rp "Press Enter to continue..."
+            ;;
+        4)
+            qs_stop "$selected_service"
+            qs_start "$selected_service"
             read -rp "Press Enter to continue..."
             ;;
         0)

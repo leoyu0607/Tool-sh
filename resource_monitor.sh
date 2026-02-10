@@ -4,7 +4,7 @@
 
 LOG="/home/ecp/ai3_resource_monitor.log"
 INTERVAL=10 # 執行間隔per second
-MAX_LOG_SIZE=$((100 * 1024 * 1024)) # 100MB
+MAX_LOG_SIZE=$((50 * 1024 * 1024)) # 50MB
 MAX_LOG_ARCHIVES=5 #Log檔數量上限
 touch $LOG
 chmod 664 $LOG
