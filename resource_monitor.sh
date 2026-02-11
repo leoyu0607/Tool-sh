@@ -41,7 +41,7 @@ maybe_rotate_logs() {
 
 #Log寫入，等同echo，但可視需求增加在每次Log寫入時的執行的動作
 log_append() {
-    #maybe_rotate_logs
+    maybe_rotate_logs
     printf "%s\n" "$1" >> "$LOG"
 }
 
@@ -67,23 +67,31 @@ log_available_memory() {
     available=$(awk '/MemAvailable/ { printf("%.2f MB", $2 / 1024) }' /proc/meminfo)
     log_append "$timestamp [RAM] Available memory: $available"
 }
+#redis
+redis_db9() {
+    REDIS_HOST="127.0.0.1" # 替換為你的 Redis 伺服器地址
+    export REDISCLI_AUTH="csii1qaz@WSX" # 替換為你的 Redis 密碼
+    db9=$(redis-cli -h $REDIS_HOST -p 6379 -n 9 DBSIZE)
+    log_append "$timestamp [Redis DB9] Number of keys: $db9"
+}
 
 while true; do
     timestamp=$(date "+%Y-%m-%d %H:%M:%S")
     # 抓取所有 PM2 APP 的 CPU / RAM
-    pm2_resource_monitor | while read -r line; do
-        log_append "$timestamp [PM2] $line"
-    done
+    #pm2_resource_monitor | while read -r line; do
+        #log_append "$timestamp [PM2] $line"
+    #done
     # 抓取 CPU Top 5
-    cpu_top5_processes | while read -r line; do
-        log_append "$timestamp [CPU] $line"
-    done
+    #cpu_top5_processes | while read -r line; do
+    #    log_append "$timestamp [CPU] $line"
+    #done
     # 抓取 RAM Top 5
-    ram_top5_processes | while read -r line; do
-        log_append "$timestamp [RAM] $line"
-    done
-    log_available_memory
-    log_append "----------------------------------------"
+    #ram_top5_processes | while read -r line; do
+    #    log_append "$timestamp [RAM] $line"
+    #done
+    #log_available_memory
+    redis_db9
+    #log_append "----------------------------------------"
     maybe_rotate_logs
     sleep $INTERVAL
 done
