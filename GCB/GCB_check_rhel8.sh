@@ -2,11 +2,15 @@
 # This script checks if the operating system is RHEL 8  
 ##version:20260210
 
-# flag=0代表未通過;1代表通過
+# flag=0代表未通過;1代表通過;2代表不適用或無法檢查
 flag="./.GCBflag"
 > "$flag"
 log="./GCB_check_rhel8.log"
 > "$log"
+
+pass=0
+fail=0
+skip=0
 
 log_append() {
     timestamp=$(date "+%Y-%m-%d %H:%M:%S")
@@ -14,7 +18,19 @@ log_append() {
 }
 
 set_flag() {
-    echo "$1=$2" >> "$flag"
+    if [  $2 -eq 1 ]; then
+        eval "$1=$2"
+        echo "$1=$2" >> "$flag"
+        pass=$((pass + 1))
+    elif [ $2 -eq 2 ]; then
+        eval "$1=$2"
+        echo "$1=$2" >> "$flag"
+        skip=$((skip + 1))
+    else
+        eval "$1=$2"
+        echo "$1=$2" >> "$flag"
+        fail=$((fail + 1))
+    fi
 }
 
 # ======================================
@@ -149,6 +165,97 @@ else
     set_flag flag_009 0
 fi
 # ======================================
+# TWGCB-01-008-0010
+# /var/tmp須設定nodev選項
+# 相依TWGCB-01-008-0009
+if [ $flag_009 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0010][SKIP] /var/tmp is not a separate partition, skipping nodev check"
+    set_flag flag_010 2
+elif findmnt -n -o OPTIONS /var/tmp 2>/dev/null | grep -q nodev; then
+    log_append "[TWGCB-01-008-0010][PASS] nodev option is enabled on /var/tmp"
+    set_flag flag_010 1
+else
+    log_append "[TWGCB-01-008-0010][FAIL] nodev option is NOT enabled on /var/tmp"
+    set_flag flag_010 0
+fi
+# ======================================
+# TWGCB-01-008-0011
+# /var/tmp須設定nosuid選項
+# 相依TWGCB-01-008-0009
+if [ $flag_009 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0011][SKIP] /var/tmp is not a separate partition, skipping nosuid check"
+    set_flag flag_011 2
+elif findmnt -n -o OPTIONS /var/tmp 2>/dev/null | grep -q nosuid; then
+    log_append "[TWGCB-01-008-0011][PASS] nosuid option is enabled on /var/tmp"
+    set_flag flag_011 1
+else
+    log_append "[TWGCB-01-008-0011][FAIL] nosuid option is NOT enabled on /var/tmp"
+    set_flag flag_011 0
+fi
+# ======================================
+# TWGCB-01-008-0012
+# /var/tmp須設定noexec選項
+# 相依TWGCB-01-008-0009
+if [ $flag_009 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0012][SKIP] /var/tmp is not a separate partition, skipping noexec check"
+    set_flag flag_012 2
+elif findmnt -n -o OPTIONS /var/tmp 2>/dev/null | grep -q noexec; then
+    log_append "[TWGCB-01-008-0012][PASS] noexec option is enabled on /var/tmp"
+    set_flag flag_012 1
+else
+    log_append "[TWGCB-01-008-0012][FAIL] noexec option is NOT enabled on /var/tmp"
+    set_flag flag_012 0
+fi
+# ======================================
+# TWGCB-01-008-0013
+# 需為/var/log配置獨立之分割磁區或邏輯磁區
+if findmnt /var/log &>/dev/null; then
+    log_append "[TWGCB-01-008-0013][PASS] /var/log is a separate partition"
+    findmnt /var/log
+    set_flag flag_013 1
+else
+    log_append "[TWGCB-01-008-0013][FAIL] /var/log is NOT a separate partition"
+    set_flag flag_013 0
+fi
+# ======================================
+# TWGCB-01-008-0014
+# 需為/var/log/audit配置獨立之分割磁區或邏輯磁區
+if findmnt /var/log/audit &>/dev/null; then
+    log_append "[TWGCB-01-008-0014][PASS] /var/log/audit is a separate partition"
+    findmnt /var/log/audit
+    set_flag flag_014 1
+else
+    log_append "[TWGCB-01-008-0014][FAIL] /var/log/audit is NOT a separate partition"
+    set_flag flag_014 0
+fi
+# ======================================
+# TWGCB-01-008-0015
+# 需為/home配置獨立之分割磁區或邏輯磁區
+if findmnt /home &>/dev/null; then
+    log_append "[TWGCB-01-008-0015][PASS] /home is a separate partition"
+    findmnt /home
+    set_flag flag_015 1
+else
+    log_append "[TWGCB-01-008-0015][FAIL] /home is NOT a separate partition"
+    set_flag flag_015 0
+fi
+# ======================================
+# TWGCB-01-008-0016
+# /home須設定nodev選項
+# 相依TWGCB-01-008-0015
+if [ $flag_015 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0016][SKIP] /home is not a separate partition, skipping nodev check"
+    set_flag flag_016 2
+elif findmnt -n -o OPTIONS /home 2>/dev/null | grep -q nodev; then
+    log_append "[TWGCB-01-008-0016][PASS] nodev option is enabled on /home"
+    set_flag flag_016 1
+else
+    log_append "[TWGCB-01-008-0016][FAIL] nodev option is NOT enabled on /home"
+    set_flag flag_016 0
+fi
+# ======================================
+# ======================================
 
 echo
-grep -E 'FAIL|CRITICAL' "$log"
+#grep -E 'FAIL|CRITICAL' "$log"
+echo "Summary: $pass checks passed, $fail checks failed, $skip checks skipped."
