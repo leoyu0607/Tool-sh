@@ -1,6 +1,11 @@
 #!/bin/bash
 # This script checks if the operating system is RHEL 8  
-##version:20260210
+##version:20260212
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root"
+    exit 1
+fi
 
 flag="./.GCBflag"
 source "$flag"
@@ -253,15 +258,21 @@ fi
 # 可攜式儲存裝置須設定nosuid選項
 # TWGCB-01-008-0022
 # 可攜式儲存裝置須設定noexec選項
-echo "install usb-storage /bin/true" > /etc/modprobe.d/disable-usb-storage.conf
-echo "blacklist usb-storage" >> /etc/modprobe.d/disable-usb-storage.conf
-sudo dracut -f
-set_flag flag_020 1
-log_append "[TWGCB-01-008-0020][FIX] disable usb-storage module to prevent portable storage devices"
-set_flag flag_021 1
-log_append "[TWGCB-01-008-0021][FIX] disable usb-storage module to prevent portable storage devices"
-set_flag flag_022 1
-log_append "[TWGCB-01-008-0022][FIX] disable usb-storage module to prevent portable storage devices"
+# TWGCB-01-008-0031
+# 需停用USB儲存裝置
+if [ $flag_020 -eq 0 ] || [ $flag_021 -eq 0 ] || [ $flag_022 -eq 0 ] || [ $flag_031 -eq 0 ]; then
+    echo "install usb-storage /bin/true" > /etc/modprobe.d/disable-usb-storage.conf
+    echo "blacklist usb-storage" >> /etc/modprobe.d/disable-usb-storage.conf
+    sudo dracut -f
+    set_flag flag_020 1
+    log_append "[TWGCB-01-008-0020][FIX] disable usb-storage module to prevent portable storage devices"
+    set_flag flag_021 1
+    log_append "[TWGCB-01-008-0021][FIX] disable usb-storage module to prevent portable storage devices"
+    set_flag flag_022 1
+    log_append "[TWGCB-01-008-0022][FIX] disable usb-storage module to prevent portable storage devices"
+    set_flag flag_031 1
+    log_append "[TWGCB-01-008-0031][FIX] disable usb-storage module to prevent USB storage devices"
+fi
 # ======================================
 # TWGCB-01-008-0023
 # 使用者家目錄須設定nodev選項
@@ -323,8 +334,89 @@ if [ $flag_023 -eq 0 ] || [ $flag_024 -eq 0 ] || [ $flag_025 -eq 0 ]; then
     done
 fi
 # ======================================
+# TWGCB-01-008-0026
+# NFS須設定nodev選項
+# TWGCB-01-008-0027
+# NFS須設定nosuid選項
+# TWGCB-01-008-0028
+# NFS須設定noexec選項
+if [ $flag_026 -eq 0 ] || [ $flag_027 -eq 0 ] || [ $flag_028 -eq 0 ]; then
+    nfs_mounts=$(findmnt -t nfs4,nfs -n -o TARGET)
+    for mp in $nfs_mounts; do
+        if awk -v mp="$mp" '
+        BEGIN { OFS="\t" }
+        # 跳過空行與註解
+        /^[[:space:]]*($|#)/ { print; next }
+        {
+        # fstab 正常至少 4 欄：spec mount fstype options
+        # 若欄位不足就原樣輸出
+        if (NF < 4) { print; next }
+        # 只處理 mount point = mp 的那行
+        if ($2 != mp) { print; next }
+        opts = $4
+        # 拆 options
+        n = split(opts, a, ",")
+        # 用 seen 做去重（保留原順序）
+        out = ""
+        delete seen
+        for (i = 1; i <= n; i++) {
+            o = a[i]
+            if (o == "") continue
+            if (!(o in seen)) {
+            seen[o] = 1
+            out = (out == "" ? o : out "," o)
+            }
+        }
+        # 確保 nodev 存在（不存在才加）
+        if (!("nodev" in seen)) out = (out == "" ? "nodev" : out ",nodev")
+        # 確保 nosuid 存在（不存在才加）
+        if (!("nosuid" in seen)) out = (out == "" ? "nosuid" : out ",nosuid")
+        # 確保 noexec 存在（不存在才加）
+        if (!("noexec" in seen)) out = (out == "" ? "noexec" : out ",noexec")
+        # 輸出修改後的行
+        $4 = out
+        print
+        }
+        ' /etc/fstab > /etc/fstab.tmp && mv /etc/fstab.tmp /etc/fstab; then
+            set_flag flag_026 1
+            log_append "[TWGCB-01-008-0026][FIX] add nodev option to NFS mount points in /etc/fstab"
+            set_flag flag_027 1
+            log_append "[TWGCB-01-008-0027][FIX] add nosuid option to NFS mount points in /etc/fstab"
+            set_flag flag_028 1
+            log_append "[TWGCB-01-008-0028][FIX] add noexec option to NFS mount points in /etc/fstab"
+        else
+            log_append "[TWGCB-01-008-0026][ERROR] failed to update /etc/fstab for nodev option on NFS mount points"
+            log_append "[TWGCB-01-008-0027][ERROR] failed to update /etc/fstab for nosuid option on NFS mount points"
+            log_append "[TWGCB-01-008-0028][ERROR] failed to update /etc/fstab for noexec option on NFS mount points"
+        fi
+        # 重新掛載
+        mount -o remount,nodev,nosuid,noexec "$mp" 2>/dev/null || true
+    done
+fi
 # ======================================
+# TWGCB-01-008-0029
+# 所有具有全域寫入(World-writable)權限之目錄須設定粘滯位(Sticky bit)
+if [ $flag_029 -eq 0 ]; then
+    dirs=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -type d -perm -0002 ! -perm -1000 2>/dev/null)
+    for dir in $dirs; do
+        if chmod +t "$dir"; then
+            log_append "[TWGCB-01-008-0029][FIX] set sticky bit on world-writable directory: $dir"
+        else
+            log_append "[TWGCB-01-008-0029][ERROR] failed to set sticky bit on world-writable directory: $dir"
+        fi
+    done
+fi
 # ======================================
+# TWGCB-01-008-0030
+# 需停用autofs服務
+if [ $flag_030 -eq 0 ]; then
+    if systemctl disable --now autofs; then
+        set_flag flag_030 1
+        log_append "[TWGCB-01-008-0030][FIX] disable autofs service"
+    else
+        log_append "[TWGCB-01-008-0030][ERROR] failed to disable autofs service"
+    fi
+fi
 # ======================================
 # ======================================
 # ======================================

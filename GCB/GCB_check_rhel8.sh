@@ -1,6 +1,11 @@
 #!/bin/bash
 # This script checks if the operating system is RHEL 8  
-##version:20260210
+##version:20260212
+
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root"
+    exit 1
+fi
 
 # flag=0代表未通過;1代表通過;2代表不適用或無法檢查
 flag="./.GCBflag"
@@ -422,12 +427,116 @@ for mp in $submounts; do
     fi
 done
 # ======================================
+# TWGCB-01-008-0026
+# NFS須設定nodev選項
+nfs_mounts=$(findmnt -t nfs4,nfs -n -o TARGET)
+if [ -z "$nfs_mounts" ]; then
+    log_append "[TWGCB-01-008-0026][PASS] No NFS mounts detected"
+    set_flag flag_026 1
+else
+    for mp in $nfs_mounts; do
+        log_append "[TWGCB-01-008-0026][INFO] Found NFS mount: $mp"
+        opts=$(findmnt -n -o OPTIONS "$mp")
+        if echo "$opts" | grep -qw nodev; then
+            set_flag flag_026 1
+            log_append "[TWGCB-01-008-0026][PASS] [$mp] nodev set"
+        else
+            set_flag flag_026 0
+            log_append "[TWGCB-01-008-0026][FAIL] [$mp] nodev missing"
+        fi
+    done
+fi
 # ======================================
+# TWGCB-01-008-0027
+# NFS須設定nosuid選項
+nfs_mounts=$(findmnt -t nfs4,nfs -n -o TARGET)
+if [ -z "$nfs_mounts" ]; then
+    log_append "[TWGCB-01-008-0027][PASS] No NFS mounts detected"
+    set_flag flag_027 1
+else
+    for mp in $nfs_mounts; do
+        log_append "[TWGCB-01-008-0027][INFO] Found NFS mount: $mp"
+        opts=$(findmnt -n -o OPTIONS "$mp")
+        if echo "$opts" | grep -qw nosuid; then
+            set_flag flag_027 1
+            log_append "[TWGCB-01-008-0027][PASS] [$mp] nosuid set"
+        else
+            set_flag flag_027 0
+            log_append "[TWGCB-01-008-0027][FAIL] [$mp] nosuid missing"
+        fi
+    done
+fi
 # ======================================
+# TWGCB-01-008-0028
+# NFS須設定noexec選項
+nfs_mounts=$(findmnt -t nfs4,nfs -n -o TARGET)
+if [ -z "$nfs_mounts" ]; then
+    log_append "[TWGCB-01-008-0028][PASS] No NFS mounts detected"
+    set_flag flag_028 1
+else
+    for mp in $nfs_mounts; do
+        log_append "[TWGCB-01-008-0028][INFO] Found NFS mount: $mp"
+        opts=$(findmnt -n -o OPTIONS "$mp")
+        if echo "$opts" | grep -qw noexec; then
+            set_flag flag_028 1
+            log_append "[TWGCB-01-008-0028][PASS] [$mp] noexec set"
+        else
+            set_flag flag_028 0
+            log_append "[TWGCB-01-008-0028][FAIL] [$mp] noexec missing"
+        fi
+    done
+fi
 # ======================================
+# TWGCB-01-008-0029
+# 所有具有全域寫入(World-writable)權限之目錄須設定粘滯位(Sticky bit)
+dirs=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -type d -perm -0002 ! -perm -1000 2>/dev/null)
+if [ -n "$dirs" ]; then
+    log_append "[TWGCB-01-008-0029][FAIL] Found world-writable directories without sticky bit:"
+    echo "$dirs" | while read -r d; do
+        log_append "[TWGCB-01-008-0029][INFO] $d"
+    done
+    set_flag flag_029 0
+else
+    log_append "[TWGCB-01-008-0029][PASS] No world-writable directories without sticky bit found"
+    set_flag flag_029 1
+fi
 # ======================================
+# TWGCB-01-008-0030
+# 需停用autofs服務
+if systemctl is-enabled autofs > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0030][FAIL] autofs service is enabled"
+    set_flag flag_030 0
+else
+    log_append "[TWGCB-01-008-0030][PASS] autofs service is disabled"
+    set_flag flag_030 1
+fi
 # ======================================
+# TWGCB-01-008-0031
+# 需停用USB儲存裝置
+# 相依TWGCB-01-008-0020,TWGCB-01-008-0021,TWGCB-01-008-0022
+# 檢查是否載入kernel module
+if lsmod | grep -q '^usb_storage'; then
+    log_append "[TWGCB-01-008-0031][FAIL] usb_storage module is loaded"
+    set_flag flag_usb 0
+else
+    # 檢查是否 blacklist
+    if grep -R "blacklist usb-storage" /etc/modprobe.d/ > /dev/null 2>&1; then
+        # 檢查是否 install override
+        if grep -R "install usb-storage /bin/true" /etc/modprobe.d/ > /dev/null 2>&1; then
+            log_append "[TWGCB-01-008-0031][PASS] usb-storage was disabled"
+            set_flag flag_usb 1
+        else
+            log_append "[TWGCB-01-008-0031][FAIL] usb-storage install override missing"
+            set_flag flag_usb 0
+        fi
+    else
+        log_append "[TWGCB-01-008-0031][FAIL] usb-storage is not blacklisted"
+        set_flag flag_usb 0
+    fi
+fi
 # ======================================
+# TWGCB-01-008-0032
+# 啟用GPG簽章驗證功能
 # ======================================
 # ======================================
 # ======================================
