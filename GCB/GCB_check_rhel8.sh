@@ -517,26 +517,105 @@ fi
 # 檢查是否載入kernel module
 if lsmod | grep -q '^usb_storage'; then
     log_append "[TWGCB-01-008-0031][FAIL] usb_storage module is loaded"
-    set_flag flag_usb 0
+    set_flag flag_031 0
 else
     # 檢查是否 blacklist
     if grep -R "blacklist usb-storage" /etc/modprobe.d/ > /dev/null 2>&1; then
         # 檢查是否 install override
         if grep -R "install usb-storage /bin/true" /etc/modprobe.d/ > /dev/null 2>&1; then
             log_append "[TWGCB-01-008-0031][PASS] usb-storage was disabled"
-            set_flag flag_usb 1
+            set_flag flag_031 1
         else
             log_append "[TWGCB-01-008-0031][FAIL] usb-storage install override missing"
-            set_flag flag_usb 0
+            set_flag flag_031 0
         fi
     else
         log_append "[TWGCB-01-008-0031][FAIL] usb-storage is not blacklisted"
-        set_flag flag_usb 0
+        set_flag flag_031 0
     fi
 fi
 # ======================================
 # TWGCB-01-008-0032
 # 啟用GPG簽章驗證功能
+t=1
+check_gpg() {
+    param=$1
+    value_expected=1
+    #檢查全域
+    global_value=$(grep -E "^\s*$param\s*=" /etc/dnf/dnf.conf 2>/dev/null | tail -n1 | awk -F= '{print $2}' | tr -d ' ')
+    if [ -z "$global_value" ]; then
+        log_append "[TWGCB-01-008-0032][FAIL] $param not set in global config"
+        t=0
+    elif [ "$global_value" != "$value_expected" ]; then
+        log_append "[TWGCB-01-008-0032][FAIL] Global $param=$global_value (expected 1)"
+        t=0
+    else
+        log_append "[TWGCB-01-008-0032][PASS] Global $param=1"
+    fi
+    #檢查所有 repo
+    for repo in /etc/yum.repos.d/*.repo; do
+        repo_value=$(grep -E "^\s*$param\s*=" "$repo" 2>/dev/null | tail -n1 | awk -F= '{print $2}' | tr -d ' ')
+        if [ -z "$repo_value" ]; then
+            log_append "[TWGCB-01-008-0032][FAIL] $param not set in repo $repo"
+            t=0
+        elif [ "$repo_value" != "$value_expected" ]; then
+            log_append "[TWGCB-01-008-0032][FAIL] Repo $repo has $param=$repo_value (expected 1)"
+            t=0
+        else
+            log_append "[TWGCB-01-008-0032][PASS] Repo $repo has $param=1"
+        fi
+    done
+}
+check_gpg gpgcheck
+check_gpg localpkg_gpgcheck
+if [ $t -eq 1 ]; then
+    set_flag flag_032 1
+else
+    set_flag flag_032 0
+fi
+# ======================================
+# TWGCB-01-008-0033
+# 需安裝sudo套件
+if rpm -q sudo &>/dev/null; then
+    log_append "[TWGCB-01-008-0033][PASS] sudo package is installed"
+    set_flag flag_033 1
+else
+    log_append "[TWGCB-01-008-0033][FAIL] sudo package is NOT installed"
+    set_flag flag_033 0
+fi
+# ======================================
+# TWGCB-01-008-0034
+# 設定sudo指令使用pty(pseudo terminal，虛擬終端)
+if sudo -V | grep -q "Use pty: yes"; then
+    log_append "[TWGCB-01-008-0034][PASS] sudo is configured to use pty"
+    set_flag flag_034 1
+else
+    log_append "[TWGCB-01-008-0034][FAIL] sudo is NOT configured to use pty"
+    set_flag flag_034 0
+fi
+# ======================================
+# TWGCB-01-008-0035
+# sudo自定義日誌檔案須設定為/var/log/sudo.log
+if sudo -V | grep -q "Logfile: /var/log/sudo.log"; then
+    log_append "[TWGCB-01-008-0035][PASS] sudo log file is set to /var/log/sudo.log"
+    set_flag flag_035 1
+else
+    log_append "[TWGCB-01-008-0035][FAIL] sudo log file is NOT set to /var/log/sudo.log"
+    set_flag flag_035 0
+fi
+# ======================================
+# TWGCB-01-008-0036
+# 安裝AIDE(Advanced Intrusion Detection Environment，先進入侵偵測環境)套件
+if rpm -q aide &>/dev/null; then
+    log_append "[TWGCB-01-008-0036][PASS] AIDE package is installed"
+    set_flag flag_036 1
+else
+    log_append "[TWGCB-01-008-0036][FAIL] AIDE package is NOT installed"
+    set_flag flag_036 0
+fi
+# ======================================
+# ======================================
+# ======================================
 # ======================================
 # ======================================
 # ======================================

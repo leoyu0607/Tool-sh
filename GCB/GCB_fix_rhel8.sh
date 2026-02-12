@@ -418,6 +418,109 @@ if [ $flag_030 -eq 0 ]; then
     fi
 fi
 # ======================================
+# TWGCB-01-008-0031
+# 需停用USB儲存裝置
+# 已經在前面 TWGCB-01-008-0020 ~ TWGCB-01-008-0022 的修正中處理了
+# ======================================
+# TWGCB-01-008-0032
+# 啟用GPG簽章驗證功能
+if [ $flag_032 -eq 0 ]; then
+    #修復全域設定
+    if [ -f /etc/dnf/dnf.conf ]; then
+        cp -a /etc/dnf/dnf.conf "/etc/dnf/dnf.conf.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
+        sed -i -E '/^\s*gpgcheck\s*=/d' /etc/dnf/dnf.conf
+        sed -i -E '/^\s*localpkg_gpgcheck\s*=/d' /etc/dnf/dnf.conf
+        echo "gpgcheck=1" >> /etc/dnf/dnf.conf
+        echo "localpkg_gpgcheck=1" >> /etc/dnf/dnf.conf
+    else
+        log_append "[TWGCB-01-008-0032][ERROR] /etc/dnf/dnf.conf not found, cannot set global gpgcheck"
+    fi
+    #修復repo設定
+    shopt -s nullglob
+    repo_files=(/etc/yum.repos.d/*.repo)
+    shopt -u nullglob
+    if [ ${#repo_files[@]} -eq 0 ]; then
+        log_append "[TWGCB-01-008-0032][ERROR] No .repo files found in /etc/yum.repos.d/, cannot set repo gpgcheck"
+    else
+        for repo in "${repo_files[@]}"; do
+            cp -a "$repo" "$repo.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
+            sed -i -E 's/^\s*gpgcheck\s*=.*/gpgcheck=1/' "$repo"
+            sed -i -E 's/^\s*localpkg_gpgcheck\s*=.*/localpkg_gpgcheck=1/' "$repo"
+            # 若確保每個 [repoid] 區塊都有這些參數
+            awk '
+            function ensure(k, v) {
+                if (!(k in seen)) print k"="v
+                seen[k]=0
+            }
+            /^\s*\[/ {
+                # 新區塊開始：先補齊上一區塊缺的參數
+                if (in) {
+                    ensure("gpgcheck","1")
+                    ensure("localpkg_gpgcheck","1")
+                }
+                # reset
+                delete seen
+                in=1
+            }
+            /^\s*gpgcheck\s*=/ { seen["gpgcheck"]=1 }
+            /^\s*localpkg_gpgcheck\s*=/ { seen["localpkg_gpgcheck"]=1 }
+            { print }
+            END {
+                if (in) {
+                    ensure("gpgcheck","1")
+                    ensure("localpkg_gpgcheck","1")
+                }
+            }' "$repo" > "${repo}.tmp" && mv -f "${repo}.tmp" "$repo"
+        done
+    fi
+    set_flag flag_032 1
+    log_append "[TWGCB-01-008-0032][FIX] enable GPG signature verification"
+fi
+# ======================================
+# TWGCB-01-008-0033
+# 需安裝sudo套件
+if [ $flag_033 -eq 0 ]; then
+    if dnf install -y sudo; then
+        set_flag flag_033 1
+        log_append "[TWGCB-01-008-0033][FIX] install sudo package"
+    else
+        log_append "[TWGCB-01-008-0033][ERROR] failed to install sudo package"
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0034
+# 設定sudo指令使用pty(pseudo terminal，虛擬終端)
+if [ $flag_034 -eq 0 ]; then
+    echo "Defaults use_pty" > /etc/sudoers.d/99-use-pty
+    chmod 440 /etc/sudoers.d/99-use-pty
+    visudo -c
+    log_append "[TWGCB-01-008-0034][FIX] set sudo to use pseudo terminal (pty)"
+    set_flag flag_034 1
+fi
+# ======================================
+# TWGCB-01-008-0035
+# sudo自定義日誌檔案須設定為/var/log/sudo.log
+if [ $flag_035 -eq 0 ]; then
+    echo "Defaults logfile=\"/var/log/sudo.log\"" > /etc/sudoers.d/99-sudo-logfile
+    chmod 440 /etc/sudoers.d/99-sudo-logfile
+    visudo -c
+    log_append "[TWGCB-01-008-0035][FIX] set sudo custom log file to /var/log/sudo.log"
+    set_flag flag_035 1
+fi
+# ======================================
+# TWGCB-01-008-0036
+# 安裝AIDE(Advanced Intrusion Detection Environment，先進入侵偵測環境)套件
+if [ $flag_036 -eq 0 ]; then
+    if dnf install -y aide; then
+        set_flag flag_036 1
+        log_append "[TWGCB-01-008-0036][FIX] install AIDE package"
+    else
+        log_append "[TWGCB-01-008-0036][ERROR] failed to install AIDE package"
+    fi
+fi
+# ======================================
+# ======================================
+# ======================================
 # ======================================
 # ======================================
 
