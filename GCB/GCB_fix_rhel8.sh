@@ -519,8 +519,41 @@ if [ $flag_036 -eq 0 ]; then
     fi
 fi
 # ======================================
+# TWGCB-01-008-0037
+# 定期檢查檔案系統完整性
+# 相依TWGCB-01-008-0036
+if [ $flag_036 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0037][IGNORE] 需要先安裝AIDE套件"
+elif [ $flag_036 -eq 1 ] && [ $flag_037 -eq 0 ]; then
+    current="$(crontab -l 2>/dev/null || true)"
+    (echo "$current"; echo "0 5 * * * /usr/sbin/aide --check > /var/log/aide-check.log 2>&1") | crontab -
+    set_flag flag_037 1
+    log_append "[TWGCB-01-008-0037][FIX] schedule regular file integrity checks with AIDE"
+fi
 # ======================================
+# TWGCB-01-008-0038
+# 開機載入程式設定檔之所有權須為root:root
+# TWGCB-01-008-0039
+# 開機載入程式設定檔之權限須為600或更嚴格
+if [ $flag_038 -eq 0 ] || [ $flag_039 -eq 0 ]; then
+    files=(/boot/grub2/grub.cfg /boot/efi/EFI/rocky/grub.cfg /boot/grub2/user.cfg /boot/grub2/grubenv)
+    for file in "${files[@]}"; do
+        if [ -f "$file" ]; then
+            chown root:root "$file"
+            chmod 600 "$file"
+        fi
+    done
+    set_flag flag_038 1
+    set_flag flag_039 1
+    log_append "[TWGCB-01-008-0038][FIX] set ownership of boot loader config files to root:root"
+    log_append "[TWGCB-01-008-0039][FIX] set permissions of boot loader config files to 600"
+fi
 # ======================================
+# TWGCB-01-008-0040
+# 開機載入程式之密碼
+if [ $flag_040 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0040][IGNORE] 影響後續維運，需要手動設定GRUB密碼，請參考官方文件進行設定"
+fi
 # ======================================
 # ======================================
 

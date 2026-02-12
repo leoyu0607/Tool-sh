@@ -586,7 +586,11 @@ fi
 # ======================================
 # TWGCB-01-008-0034
 # 設定sudo指令使用pty(pseudo terminal，虛擬終端)
-if sudo -V | grep -q "Use pty: yes"; then
+# 相依TWGCB-01-008-0033
+if [ $flag_033 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0034][SKIP] sudo package is not installed, skipping pty check"
+    set_flag flag_034 2
+elif sudo -V | grep -q "Use pty: yes"; then
     log_append "[TWGCB-01-008-0034][PASS] sudo is configured to use pty"
     set_flag flag_034 1
 else
@@ -596,7 +600,11 @@ fi
 # ======================================
 # TWGCB-01-008-0035
 # sudo自定義日誌檔案須設定為/var/log/sudo.log
-if sudo -V | grep -q "Logfile: /var/log/sudo.log"; then
+# 相依TWGCB-01-008-0033
+if [ $flag_033 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0035][SKIP] sudo package is not installed, skipping log file check"
+    set_flag flag_035 2
+elif sudo -V | grep -q "Logfile: /var/log/sudo.log"; then
     log_append "[TWGCB-01-008-0035][PASS] sudo log file is set to /var/log/sudo.log"
     set_flag flag_035 1
 else
@@ -614,9 +622,92 @@ else
     set_flag flag_036 0
 fi
 # ======================================
+# TWGCB-01-008-0037
+# 定期檢查檔案系統完整性
+# 相依TWGCB-01-008-0036
+current="$(crontab -l 2>/dev/null || true)"
+if [ $flag_036 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0037][SKIP] AIDE package is not installed, skipping cron job check"
+    set_flag flag_037 2
+elif printf "%s\n" "$current" | grep -Fqx "aide --check"; then
+    log_append "[TWGCB-01-008-0037][PASS] cron already exists"
+    set_flag flag_037 1
+else
+    log_append "[TWGCB-01-008-0037][FAIL] No cron job found for AIDE integrity check"
+    set_flag flag_037 0
+fi
 # ======================================
+# TWGCB-01-008-0038
+# 開機載入程式設定檔之所有權須為root:root
+t=1
+check_owner() {
+    file=$1
+    if [ -f "$file" ]; then
+        owner=$(stat -c "%U:%G" "$file")
+        if [ "$owner" != "root:root" ]; then
+            log_append "[TWGCB-01-008-0038][FAIL] $file owner is $owner (expected root:root)"
+            t=0
+        else
+            log_append "[TWGCB-01-008-0038][PASS] $file owner is root:root"
+        fi
+    else
+        log_append "[TWGCB-01-008-0038][INFO] $file does not exist, skipping check"
+    fi
+}
+check_owner /boot/grub2/grub.cfg
+#若是UEFI開機
+if [ -d /sys/firmware/efi ]; then
+    check_owner /boot/efi/EFI/rocky/grub.cfg
+fi
+check_owner /boot/grub2/user.cfg
+check_owner /boot/grub2/grubenv
+if [ $t -eq 1 ]; then
+    set_flag flag_038 1
+else
+    set_flag flag_038 0
+fi
 # ======================================
+# TWGCB-01-008-0039
+# 開機載入程式設定檔之權限須為600或更嚴格
+t=1
+check_permission() {
+    file=$1
+    if [ -f "$file" ]; then
+        perm=$(stat -c "%a" "$file")
+        if [ "$perm" -gt 600 ]; then
+            log_append "[TWGCB-01-008-0039][FAIL] $file permission is $perm (expected 600 or more restrictive)"
+            t=0
+        else
+            log_append "[TWGCB-01-008-0039][PASS] $file permission is $perm"
+        fi
+    else
+        log_append "[TWGCB-01-008-0039][INFO] $file does not exist, skipping check"
+    fi
+}
+check_permission /boot/grub2/grub.cfg
+#若是UEFI開機
+if [ -d /sys/firmware/efi ]; then
+    check_permission /boot/efi/EFI/rocky/grub.cfg
+fi
+check_permission /boot/grub2/user.cfg
+check_permission /boot/grub2/grubenv
+if [ $t -eq 1 ]; then
+    set_flag flag_039 1
+else
+    set_flag flag_039 0
+fi
 # ======================================
+# TWGCB-01-008-0040
+# 開機載入程式之密碼
+if [ -f /boot/grub2/grub.cfg ]; then
+    if grep -Eq '^\s*set\s+superusers=' /boot/grub2/grub.cfg && grep -Eq '^\s*password_pbkdf2\s+' /boot/grub2/grub.cfg; then
+        log_append "[TWGCB-01-008-0040][PASS] GRUB password is set"
+        set_flag flag_040 1
+    else
+        log_append "[TWGCB-01-008-0040][FAIL] GRUB password is NOT set"
+        set_flag flag_040 0
+    fi
+fi
 # ======================================
 # ======================================
 # ======================================
