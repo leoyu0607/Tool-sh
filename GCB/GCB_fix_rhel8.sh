@@ -263,6 +263,7 @@ fi
 if [ $flag_020 -eq 0 ] || [ $flag_021 -eq 0 ] || [ $flag_022 -eq 0 ] || [ $flag_031 -eq 0 ]; then
     echo "install usb-storage /bin/true" > /etc/modprobe.d/disable-usb-storage.conf
     echo "blacklist usb-storage" >> /etc/modprobe.d/disable-usb-storage.conf
+    echo "即將重新載入模組"
     sudo dracut -f
     set_flag flag_020 1
     log_append "[TWGCB-01-008-0020][FIX] disable usb-storage module to prevent portable storage devices"
@@ -448,29 +449,32 @@ if [ $flag_032 -eq 0 ]; then
             sed -i -E 's/^\s*localpkg_gpgcheck\s*=.*/localpkg_gpgcheck=1/' "$repo"
             # 若確保每個 [repoid] 區塊都有這些參數
             awk '
-            function ensure(k, v) {
-                if (!(k in seen)) print k"="v
-                seen[k]=0
+            function ensure_defaults() {
+                if (!seen["gpgcheck"])          print "gpgcheck=1"
+                if (!seen["localpkg_gpgcheck"]) print "localpkg_gpgcheck=1"
             }
-            /^\s*\[/ {
-                # 新區塊開始：先補齊上一區塊缺的參數
-                if (in) {
-                    ensure("gpgcheck","1")
-                    ensure("localpkg_gpgcheck","1")
-                }
-                # reset
+
+            # 遇到新區塊 [repoid]
+            /^[[:space:]]*\[/ {
+                # 先補齊上一個區塊缺的參數
+                if (in_section) ensure_defaults()
+
+                # reset 區塊狀態
                 delete seen
-                in=1
+                in_section = 1
             }
-            /^\s*gpgcheck\s*=/ { seen["gpgcheck"]=1 }
-            /^\s*localpkg_gpgcheck\s*=/ { seen["localpkg_gpgcheck"]=1 }
+
+            # 記錄本區塊是否看過這些 key
+            /^[[:space:]]*gpgcheck[[:space:]]*=/          { seen["gpgcheck"] = 1 }
+            /^[[:space:]]*localpkg_gpgcheck[[:space:]]*=/ { seen["localpkg_gpgcheck"] = 1 }
+
+            # 原樣輸出每一行
             { print }
+
             END {
-                if (in) {
-                    ensure("gpgcheck","1")
-                    ensure("localpkg_gpgcheck","1")
-                }
-            }' "$repo" > "${repo}.tmp" && mv -f "${repo}.tmp" "$repo"
+                if (in_section) ensure_defaults()
+            }
+            ' "$repo" > "${repo}.tmp" && mv -f "${repo}.tmp" "$repo"
         done
     fi
     set_flag flag_032 1
@@ -511,7 +515,7 @@ fi
 # TWGCB-01-008-0036
 # 安裝AIDE(Advanced Intrusion Detection Environment，先進入侵偵測環境)套件
 if [ $flag_036 -eq 0 ]; then
-    if dnf install -y aide; then
+    if dnf install -y aide --setopt=timeout=10 --setopt=retries=1 > /tmp/dnf_install.log 2>&1; then
         set_flag flag_036 1
         log_append "[TWGCB-01-008-0036][FIX] install AIDE package"
     else
@@ -539,6 +543,7 @@ if [ $flag_038 -eq 0 ] || [ $flag_039 -eq 0 ]; then
     files=(/boot/grub2/grub.cfg /boot/efi/EFI/rocky/grub.cfg /boot/grub2/user.cfg /boot/grub2/grubenv)
     for file in "${files[@]}"; do
         if [ -f "$file" ]; then
+            echo "$file: setting ownership to root:root and permissions to 600"
             chown root:root "$file"
             chmod 600 "$file"
         fi
@@ -554,6 +559,53 @@ fi
 if [ $flag_040 -eq 0 ]; then
     log_append "[TWGCB-01-008-0040][IGNORE] 影響後續維運，需要手動設定GRUB密碼，請參考官方文件進行設定"
 fi
+# ======================================
+# TWGCB-01-008-0041
+# 單一使用者模式(Single user mode)需啟用身分驗證功能
+if [ $flag_041 -eq 0 ]; then
+    #移除 override unit files 和 drop-in overrides 以確保不會繞過預設的認證設定
+    if [ -f /etc/systemd/system/rescue.service ] || [ -f /etc/systemd/system/emergency.service ]; then
+        rm -f /etc/systemd/system/rescue.service 2>/dev/null || true
+        rm -f /etc/systemd/system/emergency.service 2>/dev/null || true
+        log_append "[TWGCB-01-008-0041][INFO] removed override unit files in /etc/systemd/system/"
+    fi
+    if [ -d /etc/systemd/system/rescue.service.d ] || [ -d /etc/systemd/system/emergency.service.d ]; then
+        rm -rf /etc/systemd/system/rescue.service.d 2>/dev/null || true
+        rm -rf /etc/systemd/system/emergency.service.d 2>/dev/null || true
+        log_append "[TWGCB-01-008-0041][INFO] removed drop-in overrides in /etc/systemd/system/*.service.d/"
+    fi
+    #取得狀態退出碼,0表示未被修改,非0表示被修改或不存在
+    verify_rescue=0
+    verify_emerg=0
+    [ -f /usr/lib/systemd/system/rescue.service ] && rpm -Vf /usr/lib/systemd/system/rescue.service >/dev/null 2>&1 || verify_rescue=$?
+    [ -f /usr/lib/systemd/system/emergency.service ] && rpm -Vf /usr/lib/systemd/system/emergency.service >/dev/null 2>&1 || verify_emerg=$?
+    if [ $verify_rescue -ne 0 ] || [ $verify_emerg -ne 0 ]; then
+        if dnf reinstall -y systemd --setopt=timeout=10 --setopt=retries=1 > /tmp/dnf_reinstall.log 2>&1; then
+            log_append "[TWGCB-01-008-0041][INFO] reinstalled systemd to restore default rescue and emergency services"
+        else
+            log_append "[TWGCB-01-008-0041][ERROR] failed to reinstall systemd to restore default rescue and emergency services"
+        fi
+    else
+        log_append "[TWGCB-01-008-0041][INFO] rescue and emergency services are intact, no need to reinstall systemd"
+    fi
+    systemctl daemon-reload # 重新載入unit cache
+    ok=1
+    systemctl cat rescue.service 2>/dev/null | grep -q "systemd-sulogin-shell" || ok=0
+    systemctl cat emergency.service 2>/dev/null | grep -q "systemd-sulogin-shell" || ok=0
+    if [ $ok -eq 1 ]; then
+        set_flag flag_041 1
+        log_append "[TWGCB-01-008-0041][FIX] ensure rescue and emergency services use systemd-sulogin-shell for authentication"
+    else
+        log_append "[TWGCB-01-008-0041][ERROR] rescue and emergency services do not use systemd-sulogin-shell for authentication, manual review and fix required"
+    fi
+fi
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
 # ======================================
 # ======================================
 

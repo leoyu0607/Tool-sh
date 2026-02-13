@@ -590,9 +590,11 @@ fi
 if [ $flag_033 -eq 0 ]; then
     log_append "[TWGCB-01-008-0034][SKIP] sudo package is not installed, skipping pty check"
     set_flag flag_034 2
-elif sudo -V | grep -q "Use pty: yes"; then
+
+elif grep -Eq '^[[:space:]]*Defaults[[:space:]]+.*use_pty' /etc/sudoers /etc/sudoers.d/* 2>/dev/null; then
     log_append "[TWGCB-01-008-0034][PASS] sudo is configured to use pty"
     set_flag flag_034 1
+
 else
     log_append "[TWGCB-01-008-0034][FAIL] sudo is NOT configured to use pty"
     set_flag flag_034 0
@@ -604,11 +606,13 @@ fi
 if [ $flag_033 -eq 0 ]; then
     log_append "[TWGCB-01-008-0035][SKIP] sudo package is not installed, skipping log file check"
     set_flag flag_035 2
-elif sudo -V | grep -q "Logfile: /var/log/sudo.log"; then
-    log_append "[TWGCB-01-008-0035][PASS] sudo log file is set to /var/log/sudo.log"
+
+elif grep -REq '^[[:space:]]*Defaults([^#\n]*,)?[[:space:]]*logfile[[:space:]]*=[[:space:]]*"?/var/log/sudo\.log"?([[:space:]]|,|$)' /etc/sudoers /etc/sudoers.d/* 2>/dev/null; then
+    log_append "[TWGCB-01-008-0035][PASS] sudo is configured to use /var/log/sudo.log"
     set_flag flag_035 1
+
 else
-    log_append "[TWGCB-01-008-0035][FAIL] sudo log file is NOT set to /var/log/sudo.log"
+    log_append "[TWGCB-01-008-0035][FAIL] sudo is NOT configured to use /var/log/sudo.log"
     set_flag flag_035 0
 fi
 # ======================================
@@ -708,6 +712,99 @@ if [ -f /boot/grub2/grub.cfg ]; then
         set_flag flag_040 0
     fi
 fi
+# ======================================
+# TWGCB-01-008-0041
+# 單一使用者模式(Single user mode)需啟用身分驗證功能
+check_service() {
+    if systemctl cat "$1" > /dev/null 2>&1 | grep -q "systemd-sulogin-shell"; then
+        log_append "[TWGCB-01-008-0041][FAIL] $1 requires authentication"
+        return 0
+    else
+        log_append "[TWGCB-01-008-0041][PASS] $1 does NOT require authentication"
+        return 1
+    fi
+}
+t=1
+check_service "rescue.service" && t=0
+check_service "emergency.service" && t=0
+if [ $t -eq 1 ]; then
+    set_flag flag_041 1
+else
+    set_flag flag_041 0
+fi
+# ======================================
+# TWGCB-01-008-0042
+# 停用核心傾印(Core dump)功能
+check_core_dump_disabled() {
+    local fail=0
+    # 1) limits: * hard core 0
+    if grep -RqsE '^\s*\*\s+hard\s+core\s+0\s*$' /etc/security/limits.conf /etc/security/limits.d 2>/dev/null; then
+        log_append "[TWGCB-01-008-0042][PASS] limits: '* hard core 0' is set"
+    else
+        log_append "[TWGCB-01-008-0042][FAIL] limits: missing '* hard core 0'"
+        fail=1
+    fi
+    # 2) sysctl: fs.suid_dumpable = 0 (runtime)
+    if [ "$(sysctl -n fs.suid_dumpable 2>/dev/null)" = "0" ]; then
+        log_append "[TWGCB-01-008-0042][PASS] sysctl runtime: fs.suid_dumpable=0"
+    else
+        log_append "[TWGCB-01-008-0042][FAIL] sysctl runtime: fs.suid_dumpable != 0"
+        fail=1
+    fi
+    # 3) sysctl: kernel.core_pattern = |/bin/false (runtime)
+    if [ "$(sysctl -n kernel.core_pattern 2>/dev/null)" = "|/bin/false" ]; then
+        log_append "[TWGCB-01-008-0042][PASS] sysctl runtime: kernel.core_pattern='|/bin/false'"
+    else
+        log_append "[TWGCB-01-008-0042][FAIL] sysctl runtime: kernel.core_pattern is not '|/bin/false'"
+        fail=1
+    fi
+    # 4) 檢查 sysctl 設定檔是否能持久化（避免重開失效）
+    if grep -RqsE '^\s*fs\.suid_dumpable\s*=\s*0\s*$' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+        log_append "[TWGCB-01-008-0042][PASS] sysctl config: fs.suid_dumpable=0 present"
+    else
+        log_append "[TWGCB-01-008-0042][FAIL] sysctl config: fs.suid_dumpable=0 not found in config files"
+        fail=1
+    fi
+
+    if grep -RqsE '^\s*kernel\.core_pattern\s*=\s*\|/bin/false\s*$' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+        log_append "[TWGCB-01-008-0042][PASS] sysctl config: kernel.core_pattern='|/bin/false' present"
+    else
+        log_append "[TWGCB-01-008-0042][FAIL] sysctl config: kernel.core_pattern not found in config files"
+        fail=1
+    fi
+    # 5) 若有 systemd-coredump.socket：確認 mask + coredump.conf
+    if systemctl list-unit-files 2>/dev/null | grep -q '^systemd-coredump\.socket'; then
+        if systemctl is-enabled systemd-coredump.socket 2>/dev/null | grep -q '^masked$'; then
+            log_append "[TWGCB-01-008-0042][PASS] systemd-coredump.socket is masked"
+        else
+            log_append "[TWGCB-01-008-0042][FAIL] systemd-coredump.socket is not masked"
+            fail=1
+        fi
+
+        if [ -f /etc/systemd/coredump.conf ] \
+           && grep -qsE '^\s*Storage\s*=\s*none\s*$' /etc/systemd/coredump.conf \
+           && grep -qsE '^\s*ProcessSizeMax\s*=\s*0\s*$' /etc/systemd/coredump.conf; then
+            log_append "[TWGCB-01-008-0042][PASS] /etc/systemd/coredump.conf Storage=none & ProcessSizeMax=0"
+        else
+            log_append "[TWGCB-01-008-0042][FAIL] /etc/systemd/coredump.conf missing Storage=none or ProcessSizeMax=0"
+            fail=1
+        fi
+    else
+        log_append "[TWGCB-01-008-0042][INFO] systemd-coredump.socket not present (skip coredump service checks)"
+    fi
+    return $fail
+}
+if check_core_dump_disabled; then
+    set_flag flag_042 1
+else
+    set_flag flag_042 0
+fi
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
 # ======================================
 # ======================================
 # ======================================
