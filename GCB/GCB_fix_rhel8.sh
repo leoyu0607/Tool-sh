@@ -607,7 +607,30 @@ if [ $flag_042 -eq 0 ]; then
     log_append "[TWGCB-01-008-0042][IGNORE] 影響Sipxecs服務使用，請評估後手動設定"
 fi
 # ======================================
+# TWGCB-01-008-0043
+# 系統開機時是否需啟用記憶體位址空間配置隨機載入(Address space layout randomization, ASLR)功能
+if [ $flag_043 -eq 0 ]; then
+    echo "kernel.randomize_va_space = 2" > /etc/sysctl.d/99-aslr.conf
+    sysctl -w kernel.randomize_va_space=2
+    set_flag flag_043 1
+    log_append "[TWGCB-01-008-0043][FIX] enable Address Space Layout Randomization (ASLR)"
+fi
 # ======================================
+# TWGCB-01-008-0044
+# 設定全系統加密原則為FUTURE或FIPS
+if [ $flag_044 -eq 0 ];then
+    if [ -f /etc/crypto-policies/config ]; then
+        cp -a /etc/crypto-policies/config "/etc/crypto-policies/config.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
+        echo "FUTURE" > /etc/crypto-policies/config
+        update-crypto-policies --set FUTURE
+        update-crypto-policies
+        fips-mode-setup --enable
+        set_flag flag_044 1
+        log_append "[TWGCB-01-008-0044][FIX] set system-wide crypto policy to FUTURE"
+    else
+        log_append "[TWGCB-01-008-0044][ERROR] /etc/crypto-policies/config not found, cannot set crypto policy"
+    fi
+fi
 # ======================================
 # ======================================
 # ======================================

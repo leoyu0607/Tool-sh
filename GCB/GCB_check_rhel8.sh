@@ -800,7 +800,25 @@ else
     set_flag flag_042 0
 fi
 # ======================================
+# TWGCB-01-008-0043
+# 系統開機時是否需啟用記憶體位址空間配置隨機載入(Address space layout randomization, ASLR)功能
+if grep -R '^\s*kernel\.randomize_va_space\s*=\s*2\s*$' /etc/sysctl.conf /etc/sysctl.d/*.conf >/dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0043][PASS] ASLR is enabled (kernel.randomize_va_space=2)"
+    set_flag flag_043 1
+else
+    log_append "[TWGCB-01-008-0043][FAIL] ASLR is NOT enabled (kernel.randomize_va_space != 2)"
+    set_flag flag_043 0
+fi
 # ======================================
+# TWGCB-01-008-0044
+# 設定全系統加密原則為FUTURE或FIPS
+if grep -E -i '^\s*(FUTURE|FIPS)\s*(\s+#.*)?$' /etc/crypto-policies/config >/dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0044][PASS] System-wide crypto policy is set to FUTURE or FIPS"
+    set_flag flag_044 1
+else
+    log_append "[TWGCB-01-008-0044][FAIL] System-wide crypto policy is NOT set to FUTURE or FIPS"
+    set_flag flag_044 0
+fi
 # ======================================
 # ======================================
 # ======================================
