@@ -632,6 +632,13 @@ if [ $flag_044 -eq 0 ];then
     fi
 fi
 # ======================================
+# TWGCB-01-008-0045
+# /etc/passwd檔案所有權需為root:root
+if [ $flag_045 -eq 0 ]; then
+    chown root:root /etc/passwd
+    log_append "[TWGCB-01-008-0045][FIX] /etc/passwd ownership set to root:root"
+    set_flag flag_045 1
+fi
 # ======================================
 # ======================================
 # ======================================

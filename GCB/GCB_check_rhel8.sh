@@ -820,6 +820,17 @@ else
     set_flag flag_044 0
 fi
 # ======================================
+# TWGCB-01-008-0045
+# /etc/passwd檔案所有權需為root:root
+file="/etc/passwd"
+owner=$(stat -c "%U:%G" "$file")
+if [ "$owner" != "root:root" ]; then
+    set_flag flag_045 1
+    log_append "[TWGCB-01-008-0045][PASS] $file owner is root:root"
+else
+    set_flag flag_045 0
+    log_append "[TWGCB-01-008-0045][FAIL] $file owner is not root:root (current: $owner)"
+fi
 # ======================================
 # ======================================
 # ======================================
