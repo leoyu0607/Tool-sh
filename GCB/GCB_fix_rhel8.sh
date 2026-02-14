@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script checks if the operating system is RHEL 8  
-##version:20260212
+##version:20260214
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root"
@@ -604,7 +604,7 @@ fi
 # 停用核心傾印(Core dump)功能
 if [ $flag_042 -eq 0 ]; then
     set_flag flag_042 1
-    log_append "[TWGCB-01-008-0042][IGNORE] 影響Sipxecs服務使用，請評估後手動設定"
+    log_append "[TWGCB-01-008-0042][IGNORE] 影響Sipx服務使用，請評估後手動設定"
 fi
 # ======================================
 # TWGCB-01-008-0043
@@ -640,9 +640,130 @@ if [ $flag_045 -eq 0 ]; then
     set_flag flag_045 1
 fi
 # ======================================
+# TWGCB-01-008-0046
+# /etc/passwd檔案權限需為644或更嚴格
+if [ $flag_046 -eq 0 ]; then
+    chmod 644 /etc/passwd
+    log_append "[TWGCB-01-008-0046][FIX] /etc/passwd permissions set to 644"
+    set_flag flag_046 1
+fi
+# ======================================
+# TWGCB-01-008-0047
+# /etc/shadow檔案所有權需為root:shadow或是root:root
+if [ $flag_047 -eq 0 ]; then
+    chown root:root /etc/shadow
+    log_append "[TWGCB-01-008-0047][FIX] /etc/shadow ownership set to root:root"
+    set_flag flag_047 1
+fi
+# ======================================
+# TWGCB-01-008-0048
+# /etc/shadow檔案權限需為000
+if [ $flag_048 -eq 0 ]; then
+    chmod 000 /etc/shadow
+    log_append "[TWGCB-01-008-0048][FIX] /etc/shadow permissions set to 000"
+    set_flag flag_048 1
+fi
+# ======================================
+# TWGCB-01-008-0049
+# /etc/group檔案所有權需為root:root
+if [ $flag_049 -eq 0 ]; then
+    chown root:root /etc/group
+    log_append "[TWGCB-01-008-0049][FIX] /etc/group ownership set to root:root"
+    set_flag flag_049 1
+fi
+# ======================================
+# TWGCB-01-008-0050
+# /etc/group檔案權限需為644或更嚴格
+if [ $flag_050 -eq 0 ]; then
+    chmod 644 /etc/group
+    log_append "[TWGCB-01-008-0050][FIX] /etc/group permissions set to 644"
+    set_flag flag_050 1
+fi
+# ======================================
+# TWGCB-01-008-0051
+# /etc/gshadow檔案所有權需為root:shadow或是root:root
+if [ $flag_051 -eq 0 ]; then
+    chown root:root /etc/gshadow
+    log_append "[TWGCB-01-008-0051][FIX] /etc/gshadow ownership set to root:root"
+    set_flag flag_051 1
+fi
+# ======================================
+# TWGCB-01-008-0052
+# /etc/gshadow檔案權限需為000
+if [ $flag_052 -eq 0 ]; then
+    chmod 000 /etc/gshadow
+    log_append "[TWGCB-01-008-0052][FIX] /etc/gshadow permissions set to 000"
+    set_flag flag_052 1
+fi
+# ======================================
+# TWGCB-01-008-0053
+# /etc/passwd-檔案所有權需為root:root
+if [ $flag_053 -eq 0 ]; then
+    chown root:root /etc/passwd-
+    log_append "[TWGCB-01-008-0053][FIX] /etc/passwd- ownership set to root:root"
+    set_flag flag_053 1
+fi
+# ======================================
+# TWGCB-01-008-0054
+# /etc/passwd-檔案權限需為600或更嚴格
+if [ $flag_054 -eq 0 ]; then
+    chmod 600 /etc/passwd-
+    log_append "[TWGCB-01-008-0054][FIX] /etc/passwd- permissions set to 600"
+    set_flag flag_054 1
+fi
+# ======================================
+# TWGCB-01-008-0055
+# /etc/shadow-檔案所有權需為root:shadow或是root:root
+if [ $flag_055 -eq 0 ]; then
+    chown root:root /etc/shadow-
+    log_append "[TWGCB-01-008-0055][FIX] /etc/shadow- ownership set to root:root"
+    set_flag flag_055 1
+fi
+# ======================================
+# TWGCB-01-008-0056
+# /etc/shadow-檔案權限需為000
+if [ $flag_056 -eq 0 ]; then
+    chmod 000 /etc/shadow-
+    log_append "[TWGCB-01-008-0056][FIX] /etc/shadow- permissions set to 000"
+    set_flag flag_056 1
+fi
+# ======================================
+# TWGCB-01-008-0057
+# /etc/group-檔案所有權需為root:root
+if [ $flag_057 -eq 0 ]; then
+    chown root:root /etc/group-
+    log_append "[TWGCB-01-008-0057][FIX] /etc/group- ownership set to root:root"
+    set_flag flag_057 1
+fi
+# ======================================
+# TWGCB-01-008-0058
+# /etc/group-檔案權限需為644或更嚴格
+if [ $flag_058 -eq 0 ]; then
+    chmod 644 /etc/group-
+    log_append "[TWGCB-01-008-0058][FIX] /etc/group- permissions set to 644"
+    set_flag flag_058 1
+fi
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
 # ======================================
 # ======================================
 # ======================================
 # ======================================
 
+success=$(cat $log | grep "\[FIX\]" | wc -l)
+ignore=$(cat $log | grep "\[IGNORE\]" | wc -l)
+error=$(cat $log | grep "\[ERROR\]" | wc -l)
+echo
+echo "Summary: $success fixes applied, $ignore fixes ignored, $error errors occurred."
 echo "Fix completed. Please reboot the system and review the log file for details."

@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script checks if the operating system is RHEL 8  
-##version:20260212
+##version:20260214
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root"
@@ -824,13 +824,183 @@ fi
 # /etc/passwd檔案所有權需為root:root
 file="/etc/passwd"
 owner=$(stat -c "%U:%G" "$file")
-if [ "$owner" != "root:root" ]; then
+if [ "$owner" = "root:root" ]; then
     set_flag flag_045 1
     log_append "[TWGCB-01-008-0045][PASS] $file owner is root:root"
 else
     set_flag flag_045 0
     log_append "[TWGCB-01-008-0045][FAIL] $file owner is not root:root (current: $owner)"
 fi
+# ======================================
+# TWGCB-01-008-0046
+# /etc/passwd檔案權限需為644或更嚴格
+file="/etc/passwd"
+perm=$(stat -c "%a" "$file")
+if [ "$perm" -le 644 ]; then
+    set_flag flag_046 1 
+else
+    set_flag flag_046 0
+fi
+# ======================================
+# TWGCB-01-008-0047
+# /etc/shadow檔案所有權需為root:shadow或是root:root
+file="/etc/shadow"
+owner=$(stat -c "%U:%G" "$file")
+if [ "$owner" = "root:shadow" ] || [ "$owner" = "root:root" ]; then
+    set_flag flag_047 1
+    log_append "[TWGCB-01-008-0047][PASS] $file owner is root:shadow or root:root (current: $owner)"
+else
+    set_flag flag_047 0
+    log_append "[TWGCB-01-008-0047][FAIL] $file owner is not root:shadow or root:root (current: $owner)"
+fi
+# ======================================
+# TWGCB-01-008-0048
+# /etc/shadow檔案權限需為000
+file="/etc/shadow"
+perm=$(stat -c "%a" "$file")
+if [ "$perm" -eq 000 ]; then
+    set_flag flag_048 1
+    log_append "[TWGCB-01-008-0048][PASS] $file permission is 000"
+else
+    set_flag flag_048 0
+    log_append "[TWGCB-01-008-0048][FAIL] $file permission is not 000 (current: $perm)"
+fi
+# ======================================
+# TWGCB-01-008-0049
+# /etc/group檔案所有權需為root:root
+file="/etc/group"
+owner=$(stat -c "%U:%G" "$file")
+if [ "$owner" = "root:root" ]; then
+    set_flag flag_049 1
+    log_append "[TWGCB-01-008-0049][PASS] $file owner is root:root"
+else
+    set_flag flag_049 0
+    log_append "[TWGCB-01-008-0049][FAIL] $file owner is not root:root (current: $owner)"
+fi
+# ======================================
+# TWGCB-01-008-0050
+# /etc/group檔案權限需為644或更嚴格
+file="/etc/group"
+perm=$(stat -c "%a" "$file")
+if [ "$perm" -le 644 ]; then
+    set_flag flag_050 1
+    log_append "[TWGCB-01-008-0050][PASS] $file permission is 644 or more restrictive (current: $perm)"
+else
+    set_flag flag_050 0
+    log_append "[TWGCB-01-008-0050][FAIL] $file permission is not 644 or more restrictive (current: $perm)"
+fi
+# ======================================
+# TWGCB-01-008-0051
+# /etc/gshadow檔案所有權需為root:shadow或是root:root
+file="/etc/gshadow"
+owner=$(stat -c "%U:%G" "$file")
+if [ "$owner" = "root:shadow" ] || [ "$owner" = "root:root" ]; then
+    set_flag flag_051 1
+    log_append "[TWGCB-01-008-0051][PASS] $file owner is root:shadow or root:root (current: $owner)"
+else
+    set_flag flag_051 0
+    log_append "[TWGCB-01-008-0051][FAIL] $file owner is not root:shadow or root:root (current: $owner)"
+fi
+# ======================================
+# TWGCB-01-008-0052
+# /etc/gshadow檔案權限需為000
+file="/etc/gshadow"
+perm=$(stat -c "%a" "$file")
+if [ "$perm" -eq 000 ]; then
+    set_flag flag_052 1
+    log_append "[TWGCB-01-008-0052][PASS] $file permission is 000"
+else
+    set_flag flag_052 0
+    log_append "[TWGCB-01-008-0052][FAIL] $file permission is not 000 (current: $perm)"
+fi
+# ======================================
+# TWGCB-01-008-0053
+# /etc/passwd-檔案所有權需為root:root
+file="/etc/passwd-"
+owner=$(stat -c "%U:%G" "$file")
+if [ "$owner" = "root:root" ]; then
+    set_flag flag_053 1
+    log_append "[TWGCB-01-008-0053][PASS] $file owner is root:root"
+else
+    set_flag flag_053 0
+    log_append "[TWGCB-01-008-0053][FAIL] $file owner is not root:root (current: $owner)"
+fi
+# ======================================
+# TWGCB-01-008-0054
+# /etc/passwd-檔案權限需為600或更嚴格
+file="/etc/passwd-"
+perm=$(stat -c "%a" "$file")
+if [ "$perm" -le 600 ]; then
+    set_flag flag_054 1
+    log_append "[TWGCB-01-008-0054][PASS] $file permission is 600 or more restrictive (current: $perm)"
+else
+    set_flag flag_054 0
+    log_append "[TWGCB-01-008-0054][FAIL] $file permission is not 600 or more restrictive (current: $perm)"
+fi
+# ======================================
+# TWGCB-01-008-0055
+# /etc/shadow-檔案所有權需為root:shadow或是root:root
+file="/etc/shadow-"
+owner=$(stat -c "%U:%G" "$file")
+if [ "$owner" = "root:shadow" ] || [ "$owner" = "root:root" ]; then
+    set_flag flag_055 1
+    log_append "[TWGCB-01-008-0055][PASS] $file owner is root:shadow or root:root (current: $owner)"
+else
+    set_flag flag_055 0
+    log_append "[TWGCB-01-008-0055][FAIL] $file owner is not root:shadow or root:root (current: $owner)"
+fi
+# ======================================
+# TWGCB-01-008-0056
+# /etc/shadow-檔案權限需為000
+file="/etc/shadow-"
+perm=$(stat -c "%a" "$file")
+if [ "$perm" -eq 000 ]; then
+    set_flag flag_056 1
+    log_append "[TWGCB-01-008-0056][PASS] $file permission is 000"
+else
+    set_flag flag_056 0
+    log_append "[TWGCB-01-008-0056][FAIL] $file permission is not 000 (current: $perm)"
+fi
+# ======================================
+# TWGCB-01-008-0057
+# /etc/group-檔案所有權需為root:root
+file="/etc/group-"
+owner=$(stat -c "%U:%G" "$file")
+if [ "$owner" = "root:root" ]; then
+    set_flag flag_057 1
+    log_append "[TWGCB-01-008-0057][PASS] $file owner is root:root"
+else
+    set_flag flag_057 0
+    log_append "[TWGCB-01-008-0057][FAIL] $file owner is not root:root (current: $owner)"
+fi
+# ======================================
+# TWGCB-01-008-0058
+# /etc/group-檔案權限需為644或更嚴格
+file="/etc/group-"
+perm=$(stat -c "%a" "$file")
+if [ "$perm" -le 644 ]; then
+    set_flag flag_058 1
+    log_append "[TWGCB-01-008-0058][PASS] $file permission is 644 or more restrictive (current: $perm)"
+else
+    set_flag flag_058 0
+    log_append "[TWGCB-01-008-0058][FAIL] $file permission is not 644 or more restrictive (current: $perm)"
+fi
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
+# ======================================
 # ======================================
 # ======================================
 # ======================================
@@ -841,3 +1011,4 @@ fi
 echo
 #grep -E 'FAIL|CRITICAL' "$log"
 echo "Summary: $pass checks passed, $fail checks failed, $skip checks skipped."
+echo "GCB for RHEL 8 check completed. See $log for details."
