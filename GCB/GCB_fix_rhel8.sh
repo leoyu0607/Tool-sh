@@ -744,9 +744,66 @@ if [ $flag_058 -eq 0 ]; then
     set_flag flag_058 1
 fi
 # ======================================
+# TWGCB-01-008-0059
+# /etc/gshadow-檔案所有權需為root:shadow或是root:root
+if [ $flag_059 -eq 0 ]; then
+    chown root:root /etc/gshadow-
+    log_append "[TWGCB-01-008-0059][FIX] /etc/gshadow- ownership set to root:root"
+    set_flag flag_059 1
+fi
 # ======================================
+# TWGCB-01-008-0060
+# /etc/gshadow-檔案權限需為000
+if [ $flag_060 -eq 0 ]; then
+    chmod 000 /etc/gshadow-
+    log_append "[TWGCB-01-008-0060][FIX] /etc/gshadow- permissions set to 000"
+    set_flag flag_060 1
+fi
 # ======================================
+# TWGCB-01-008-0061
+# 其他使用者禁止寫入具有全域寫入(World-writable)權限的檔案
+if [ $flag_061 -eq 0 ]; then
+    # 找出所有具有全域寫入權限的檔案
+    files=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -type f -perm -0002 ! -perm -1000 2>/dev/null)
+    for file in $files; do
+        if chmod o-w "$file"; then
+            log_append "[TWGCB-01-008-0061][FIX] removed world-writable permission from file: $file"
+        else
+            log_append "[TWGCB-01-008-0061][ERROR] failed to remove world-writable permission from file: $file"
+        fi
+    done
+    set_flag flag_061 1
+fi
 # ======================================
+# TWGCB-01-008-0062
+# 檢查所有檔案與目錄擁有者是否皆為合法使用者
+if [ $flag_062 -eq 0 ]; then
+    if [ -s /tmp/gcb_062_invalid_uid_entries.txt ]; then
+        fail=0
+        while read -r uid user path; do
+            [ -z "$path" ] && continue
+            if [ ! -e "$path" ]; then
+                log_append "[TWGCB-01-008-0062][ERROR] path not exists, skip: uid=$uid user=$user path=$path"
+                fail=$((fail + 1))
+                continue
+            fi
+            if chown root:root "$path"; then
+                log_append "[TWGCB-01-008-0062][FIX] changed ownership of $path to root:root (uid=$uid)"
+            else
+                log_append "[TWGCB-01-008-0062][ERROR] failed to change ownership of $path to root:root (uid=$uid)"
+                fail=$((fail + 1))
+            fi
+        done < /tmp/gcb_062_invalid_uid_entries.txt
+        if [ $fail -eq 0 ]; then
+            set_flag flag_062 1
+            log_append "[TWGCB-01-008-0062][FIX] all invalid UID entries fixed"
+        else
+            log_append "[TWGCB-01-008-0062][ERROR] some invalid UID entries could not be fixed, please check the log"
+        fi
+    else
+        log_append "[TWGCB-01-008-0062][ERROR] no invalid UID entries file found"
+    fi
+fi
 # ======================================
 # ======================================
 # ======================================

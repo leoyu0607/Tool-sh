@@ -986,9 +986,65 @@ else
     log_append "[TWGCB-01-008-0058][FAIL] $file permission is not 644 or more restrictive (current: $perm)"
 fi
 # ======================================
+# TWGCB-01-008-0059
+# /etc/gshadow-檔案所有權需為root:shadow或是root:root
+file="/etc/gshadow-"
+owner=$(stat -c "%U:%G" "$file")
+if [ "$owner" = "root:shadow" ] || [ "$owner" = "root:root" ]; then
+    set_flag flag_059 1
+    log_append "[TWGCB-01-008-0059][PASS] $file owner is root:shadow or root:root (current: $owner)"
+else
+    set_flag flag_059 0
+    log_append "[TWGCB-01-008-0059][FAIL] $file owner is not root:shadow or root:root (current: $owner)"
+fi
 # ======================================
+# TWGCB-01-008-0060
+# /etc/gshadow-檔案權限需為000
+file="/etc/gshadow-"
+perm=$(stat -c "%a" "$file")
+if [ "$perm" -eq 000 ]; then
+    set_flag flag_060 1
+    log_append "[TWGCB-01-008-0060][PASS] $file permission is 000"
+else
+    set_flag flag_060 0
+    log_append "[TWGCB-01-008-0060][FAIL] $file permission is not 000 (current: $perm)"
+fi
 # ======================================
+# TWGCB-01-008-0061
+# 其他使用者禁止寫入具有全域寫入(World-writable)權限的檔案
+world_writable_files=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -type f -perm -0002 ! -perm -1000 2>/dev/null)
+if [ -n "$world_writable_files" ]; then
+    log_append "[TWGCB-01-008-0061][FAIL] Found world-writable files without sticky bit:"
+    echo "$world_writable_files" | while read -r f; do
+        log_append "[TWGCB-01-008-0061][INFO] $f"
+    done
+    set_flag flag_061 0
+else
+    log_append "[TWGCB-01-008-0061][PASS] No world-writable files without sticky bit found"
+    set_flag flag_061 1
+fi
 # ======================================
+# TWGCB-01-008-0062
+# 檢查所有檔案與目錄擁有者是否皆為合法使用者
+valid_uids=$(awk -F: '{print $3}' /etc/passwd)
+invalid_uid_entries=$(
+  while read -r mp; do
+    find "$mp" -xdev -printf '%u %U %p\n'
+  done < <(findmnt -rn -o TARGET -t ext4,xfs) \
+  | awk 'NR==FNR{ok[$1]=1; next} !ok[$1]' <(printf "%s\n" "$valid_uids") - \
+  | sort -u
+)
+if [ -n "$invalid_uid_entries" ]; then
+    echo "$invalid_uid_entries" > /tmp/gcb_062_invalid_uid_entries.txt
+    log_append "[TWGCB-01-008-0062][FAIL] Found files or directories owned by invalid users:"
+    echo "$invalid_uid_entries" | while read -r userId userName fileName; do
+        log_append "[TWGCB-01-008-0062][INFO] Invalid User Id: $userId, User Name: $userName, File Name: $fileName"
+    done
+    set_flag flag_062 0
+else
+    log_append "[TWGCB-01-008-0062][PASS] All files and directories have valid owners"
+    set_flag flag_062 1
+fi
 # ======================================
 # ======================================
 # ======================================
