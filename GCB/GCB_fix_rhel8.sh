@@ -796,6 +796,7 @@ if [ $flag_062 -eq 0 ]; then
         done < /tmp/gcb_062_invalid_uid_entries.txt
         if [ $fail -eq 0 ]; then
             set_flag flag_062 1
+            rm -f /tmp/gcb_062_invalid_uid_entries.txt
             log_append "[TWGCB-01-008-0062][FIX] all invalid UID entries fixed"
         else
             log_append "[TWGCB-01-008-0062][ERROR] some invalid UID entries could not be fixed, please check the log"
