@@ -1012,11 +1012,11 @@ fi
 # ======================================
 # TWGCB-01-008-0061
 # 其他使用者禁止寫入具有全域寫入(World-writable)權限的檔案
-world_writable_files=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -type f -perm -0002 ! -perm -1000 2>/dev/null)
+world_writable_files=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -xdev -type f -perm -0002 2>/dev/null)
 if [ -n "$world_writable_files" ]; then
     log_append "[TWGCB-01-008-0061][FAIL] Found world-writable files without sticky bit:"
     echo "$world_writable_files" | while read -r f; do
-        log_append "[TWGCB-01-008-0061][INFO] $f"
+        log_append "[TWGCB-01-008-0061][INFO] File Path: $f"
     done
     set_flag flag_061 0
 else
@@ -1029,7 +1029,7 @@ fi
 valid_uids=$(awk -F: '{print $3}' /etc/passwd)
 invalid_uid_entries=$(
   while read -r mp; do
-    find "$mp" -xdev -printf '%u %U %p\n'
+    find "$mp" -xdev -printf '%U %u %p\n'
   done < <(findmnt -rn -o TARGET -t ext4,xfs) \
   | awk 'NR==FNR{ok[$1]=1; next} !ok[$1]' <(printf "%s\n" "$valid_uids") - \
   | sort -u
@@ -1046,7 +1046,48 @@ else
     set_flag flag_062 1
 fi
 # ======================================
+# TWGCB-01-008-0063
+# 檢查所有檔案與目錄擁有者是否皆為合法群組
+valid_gids=$(awk -F: '{print $3}' /etc/group)
+invalid_gid_entries=$(
+  while read -r mp; do
+    find "$mp" -xdev -printf '%G %g %p\n'
+  done < <(findmnt -rn -o TARGET -t ext4,xfs) \
+  | awk 'NR==FNR{ok[$1]=1; next} !ok[$1]' <(printf "%s\n" "$valid_gids") - \
+  | sort -u
+)
+if [ -n "$invalid_gid_entries" ]; then
+    echo "$invalid_gid_entries" > /tmp/gcb_063_invalid_gid_entries.txt
+    log_append "[TWGCB-01-008-0063][FAIL] Found files or directories owned by invalid groups:"
+    echo "$invalid_gid_entries" | while read -r groupId groupName fileName; do
+        log_append "[TWGCB-01-008-0063][INFO] Invalid Group Id: $groupId, Group Name: $groupName, File Name: $fileName"
+    done
+    set_flag flag_063 0
+else
+    log_append "[TWGCB-01-008-0063][PASS] All files and directories have valid group owners"
+    set_flag flag_063 1
+fi
 # ======================================
+# TWGCB-01-008-0064
+# 所有具有全域寫入權限的目錄擁有者需為root或其他系統帳號
+invalid_world_writable_dirs=$(
+  while read -r mp; do
+    find "$mp" -xdev -type d -perm -0002 ! -perm -1000 -printf '%U %u %p\n'
+  done < <(findmnt -rn -o TARGET -t ext4,xfs) \
+  | awk '$1 >= 1000 {print "NON-SYSTEM OWNER:", $0}' \
+  | sort -u
+)
+if [ -n "$invalid_world_writable_dirs" ]; then
+    echo "$invalid_world_writable_dirs" > /tmp/gcb_064_invalid_world_writable_dirs.txt
+    log_append "[TWGCB-01-008-0064][FAIL] Found world-writable directories owned by non-root and non-system accounts:"
+    echo "$invalid_world_writable_dirs" | while read -r userId userName dirName; do
+        log_append "[TWGCB-01-008-0064][INFO] World-writable Directory: $dirName, Owner User Id: $userId, Owner User Name: $userName"
+    done
+    set_flag flag_064 0
+else
+    log_append "[TWGCB-01-008-0064][PASS] All world-writable directories are owned by root or system accounts"
+    set_flag flag_064 1
+fi
 # ======================================
 # ======================================
 # ======================================
@@ -1065,6 +1106,6 @@ fi
 # ======================================
 
 echo
-#grep -E 'FAIL|CRITICAL' "$log"
+grep -E 'FAIL|CRITICAL' "$log"
 echo "Summary: $pass checks passed, $fail checks failed, $skip checks skipped."
 echo "GCB for RHEL 8 check completed. See $log for details."

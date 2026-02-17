@@ -764,7 +764,7 @@ fi
 # 其他使用者禁止寫入具有全域寫入(World-writable)權限的檔案
 if [ $flag_061 -eq 0 ]; then
     # 找出所有具有全域寫入權限的檔案
-    files=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -type f -perm -0002 ! -perm -1000 2>/dev/null)
+    files=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -xdev -type f -perm -0002 2>/dev/null)
     for file in $files; do
         if chmod o-w "$file"; then
             log_append "[TWGCB-01-008-0061][FIX] removed world-writable permission from file: $file"
@@ -788,7 +788,7 @@ if [ $flag_062 -eq 0 ]; then
                 continue
             fi
             if chown root:root "$path"; then
-                log_append "[TWGCB-01-008-0062][FIX] changed ownership of $path to root:root (uid=$uid)"
+                log_append "[TWGCB-01-008-0062][FIX] changed ownership of $path to root:root from uid=$uid user=$user"
             else
                 log_append "[TWGCB-01-008-0062][ERROR] failed to change ownership of $path to root:root (uid=$uid)"
                 fail=$((fail + 1))
@@ -806,7 +806,54 @@ if [ $flag_062 -eq 0 ]; then
     fi
 fi
 # ======================================
+# TWGCB-01-008-0063
+# 檢查所有檔案與目錄擁有者是否皆為合法群組
+if [ $flag_063 -eq 0 ]; then
+    if [ -s /tmp/gcb_063_invalid_gid_entries.txt ]; then
+        fail=0
+        while read -r gid group path; do
+            [ -z "$path" ] && continue
+            if [ ! -e "$path" ]; then
+                log_append "[TWGCB-01-008-0063][ERROR] path not exists, skip: gid=$gid group=$group path=$path"
+                fail=$((fail + 1))
+                continue
+            fi
+            if chown root:root "$path"; then
+                log_append "[TWGCB-01-008-0063][FIX] changed ownership of $path to root:root from gid=$gid group=$group"
+            else
+                log_append "[TWGCB-01-008-0063][ERROR] failed to change ownership of $path to root:root (gid=$gid)"
+                fail=$((fail + 1))
+            fi
+        done < /tmp/gcb_063_invalid_gid_entries.txt
+        if [ $fail -eq 0 ]; then
+            set_flag flag_063 1
+            rm -f /tmp/gcb_063_invalid_gid_entries.txt
+            log_append "[TWGCB-01-008-0063][FIX] all invalid GID entries fixed"
+        else
+            log_append "[TWGCB-01-008-0063][ERROR] some invalid GID entries could not be fixed, please check the log"
+        fi
+    else
+        log_append "[TWGCB-01-008-0063][ERROR] no invalid GID entries file found"
+    fi
+fi
 # ======================================
+# TWGCB-01-008-0064
+# 所有具有全域寫入權限的目錄擁有者需為root或其他系統帳號
+if [ $flag_064 -eq 0 ]; then
+    # 找出所有具有全域寫入權限的目錄
+    dirs=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -xdev -type d -perm -0002 2>/dev/null)
+    for dir in $dirs; do
+        owner=$(stat -c "%U" "$dir")
+        if [ "$owner" != "root" ] && ! getent passwd "$owner" >/dev/null; then
+            if chown root:root "$dir"; then
+                log_append "[TWGCB-01-008-0064][FIX] changed ownership of world-writable directory $dir to root:root from $owner"
+            else
+                log_append "[TWGCB-01-008-0064][ERROR] failed to change ownership of world-writable directory $dir to root:root from $owner"
+            fi
+        fi
+    done
+    set_flag flag_064 1
+fi
 # ======================================
 # ======================================
 # ======================================
