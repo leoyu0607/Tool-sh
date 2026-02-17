@@ -1074,7 +1074,7 @@ invalid_world_writable_dirs=$(
   while read -r mp; do
     find "$mp" -xdev -type d -perm -0002 ! -perm -1000 -printf '%U %u %p\n'
   done < <(findmnt -rn -o TARGET -t ext4,xfs) \
-  | awk '$1 >= 1000 {print "NON-SYSTEM OWNER:", $0}' \
+  | awk '$1 >= 1000 {print $0}' \
   | sort -u
 )
 if [ -n "$invalid_world_writable_dirs" ]; then
@@ -1089,6 +1089,26 @@ else
     set_flag flag_064 1
 fi
 # ======================================
+# TWGCB-01-008-0065
+# 所有具有全域寫入權限的目錄擁有群組需為root或其他系統群組
+invalid_world_writable_dirs_groups=$(
+  while read -r mp; do
+    find "$mp" -xdev -type d -perm -0002 ! -perm -1000 -printf '%G %g %p\n'
+  done < <(findmnt -rn -o TARGET -t ext4,xfs) \
+  | awk '$1 >= 1000 {print "NON-SYSTEM GROUP:", $0}' \
+  | sort -u
+)
+if [ -n "$invalid_world_writable_dirs_groups" ]; then
+    echo "$invalid_world_writable_dirs_groups" > /tmp/gcb_065_invalid_world_writable_dirs_groups.txt
+    log_append "[TWGCB-01-008-0065][FAIL] Found world-writable directories with group ownership of non-root and non-system groups:"
+    echo "$invalid_world_writable_dirs_groups" | while read -r groupId groupName dirName; do
+        log_append "[TWGCB-01-008-0065][INFO] World-writable Directory: $dirName, Owner Group Id: $groupId, Owner Group Name: $groupName"
+    done
+    set_flag flag_065 0
+else
+    log_append "[TWGCB-01-008-0065][PASS] All world-writable directories have group ownership of root or system groups"
+    set_flag flag_065 1
+fi
 # ======================================
 # ======================================
 # ======================================

@@ -840,19 +840,32 @@ fi
 # TWGCB-01-008-0064
 # 所有具有全域寫入權限的目錄擁有者需為root或其他系統帳號
 if [ $flag_064 -eq 0 ]; then
-    # 找出所有具有全域寫入權限的目錄
-    dirs=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -xdev -type d -perm -0002 2>/dev/null)
-    for dir in $dirs; do
-        owner=$(stat -c "%U" "$dir")
-        if [ "$owner" != "root" ] && ! getent passwd "$owner" >/dev/null; then
-            if chown root:root "$dir"; then
-                log_append "[TWGCB-01-008-0064][FIX] changed ownership of world-writable directory $dir to root:root from $owner"
-            else
-                log_append "[TWGCB-01-008-0064][ERROR] failed to change ownership of world-writable directory $dir to root:root from $owner"
+    if [ -s /tmp/gcb_064_invalid_world_writable_dirs.txt ]; then
+        fail=0
+        while read -r uid user path; do
+            [ -z "$path" ] && continue
+            if [ ! -d "$path" ]; then
+                log_append "[TWGCB-01-008-0064][ERROR] path not exists, skip: uid=$uid user=$user path=$path"
+                fail=$((fail + 1))
+                continue
             fi
+            if chown root:root "$path"; then
+                log_append "[TWGCB-01-008-0064][FIX] changed ownership of $path to root:root from uid=$uid user=$user"
+            else
+                log_append "[TWGCB-01-008-0064][ERROR] failed to change ownership of $path to root:root (uid=$uid)"
+                fail=$((fail + 1))
+            fi
+        done < /tmp/gcb_064_invalid_world_writable_dirs.txt
+        if [ $fail -eq 0 ]; then
+            set_flag flag_064 1
+            rm -f /tmp/gcb_064_invalid_world_writable_dirs.txt
+            log_append "[TWGCB-01-008-0064][FIX] all invalid world-writable directories fixed"
+        else
+            log_append "[TWGCB-01-008-0064][ERROR] some invalid world-writable directories could not be fixed, please check the log"
         fi
-    done
-    set_flag flag_064 1
+    else
+        log_append "[TWGCB-01-008-0064][ERROR] no invalid world-writable directories file found"
+    fi
 fi
 # ======================================
 # ======================================
