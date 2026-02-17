@@ -1095,7 +1095,7 @@ invalid_world_writable_dirs_groups=$(
   while read -r mp; do
     find "$mp" -xdev -type d -perm -0002 ! -perm -1000 -printf '%G %g %p\n'
   done < <(findmnt -rn -o TARGET -t ext4,xfs) \
-  | awk '$1 >= 1000 {print "NON-SYSTEM GROUP:", $0}' \
+  | awk '$1 >= 1000 {print $0}' \
   | sort -u
 )
 if [ -n "$invalid_world_writable_dirs_groups" ]; then
@@ -1110,6 +1110,24 @@ else
     set_flag flag_065 1
 fi
 # ======================================
+# TWGCB-01-008-0066
+# 需設定系統命令檔案權限，使系統命令檔案具有755或更低權限
+invalid_command_files=$(
+  find -L /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin \
+    -xdev -type f -perm /0022 -printf '%m %p\n' 2>/dev/null \
+  | sort -u
+)
+if [ -n "$invalid_command_files" ]; then
+    echo "$invalid_command_files" > /tmp/gcb_066_invalid_command_files.txt
+    log_append "[TWGCB-01-008-0066][FAIL] Found executable files with permissions more permissive than 755"
+    echo "$invalid_command_files" | while read -r perm fileName; do
+        log_append "[TWGCB-01-008-0066][INFO] Command File: $fileName, Permission: $perm"
+    done
+    set_flag flag_066 0
+else
+    log_append "[TWGCB-01-008-0066][PASS] All executable files have permissions of 755 or more restrictive"
+    set_flag flag_066 1
+fi
 # ======================================
 # ======================================
 # ======================================

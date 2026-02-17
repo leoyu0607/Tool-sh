@@ -12,13 +12,29 @@ source "$flag"
 log="./GCB_fix_rhel8.log"
 > "$log"
 
+success=0
+ignore=0
+error=0
+
 log_append() {
     timestamp=$(date "+%Y-%m-%d %H:%M:%S")
     echo "$timestamp $1" | tee -a "$log"
 }
 
 set_flag() {
-    sed -i "s/$1=0/$1=1/g" "$flag"
+    if [  $2 -eq 1 ]; then
+        eval "$1=$2"
+        sed -i "s/^$1=.*/$1=$2/" "$flag"
+        success=$((success + 1))
+    elif [ $2 -eq 2 ]; then
+        eval "$1=$2"
+        sed -i "s/^$1=.*/$1=$2/" "$flag"
+        ignore=$((ignore + 1))
+    else
+        eval "$1=$2"
+        sed -i "s/^$1=.*/$1=$2/" "$flag"
+        error=$((error + 1))
+    fi
 }
 
 # 因為需要操作硬碟系統，所以先備份 /etc/fstab，以防止修改錯誤導致系統無法啟動
@@ -31,7 +47,7 @@ if [ $flag_001 -eq 0 ]; then
     echo "install cramfs /bin/true" | sudo tee /etc/modprobe.d/cramfs.conf
     echo "blacklist cramfs" | sudo tee -a /etc/modprobe.d/cramfs.conf
     sudo dracut -f
-    set_flag flag_001
+    set_flag flag_001 1
     log_append "[TWGCB-01-008-0001][FIX] disable the cramfs"
 fi
 # ======================================
@@ -42,7 +58,7 @@ if [ $flag_002 -eq 0 ]; then
     echo "install squashfs /bin/true" | sudo tee "$SQUASHFS_CONF"
     echo "blacklist squashfs" | sudo tee -a "$SQUASHFS_CONF"
     sudo dracut -f
-    set_flag flag_002
+    set_flag flag_002 1
     log_append "[TWGCB-01-008-0002][FIX] disable the squashfs"
 fi
 # ======================================
@@ -53,7 +69,7 @@ if [ $flag_003 -eq 0 ]; then
     echo "install udf /bin/true" | sudo tee "$UDF_CONF"
     echo "blacklist udf" | sudo tee -a "$UDF_CONF"
     sudo dracut -f
-    set_flag flag_003
+    set_flag flag_003 1
     log_append "[TWGCB-01-008-0003][FIX] disable the udf"
 fi
 # ======================================
@@ -61,7 +77,7 @@ fi
 # 設定/tmp目錄需為tmpfs
 if [ $flag_004 -eq 0 ]; then
     systemctl enable --now tmp.mount
-    set_flag flag_004
+    set_flag flag_004 1
     log_append "[TWGCB-01-008-0004][FIX] set /tmp mounted as tmpfs"
 fi
 # ======================================
@@ -71,7 +87,7 @@ if [ $flag_005 -eq 0 ]; then
     sed -i "s/Options.*/Options=mode=1777,strictatime,nosuid,nodev/" /usr/lib/systemd/system/tmp.mount
     sudo systemctl daemon-reload
     sudo systemctl restart tmp.mount
-    set_flag flag_005
+    set_flag flag_005 1
     log_append "[TWGCB-01-008-0005][FIX] set /tmp option as nodev"
 fi
 # ======================================
@@ -81,7 +97,7 @@ if [ $flag_006 -eq 0 ]; then
     sed -i "s/Options.*/Options=mode=1777,strictatime,nosuid,nodev/" /usr/lib/systemd/system/tmp.mount
     sudo systemctl daemon-reload
     sudo systemctl restart tmp.mount
-    set_flag flag_006
+    set_flag flag_006 1
     log_append "[TWGCB-01-008-0006][FIX] set /tmp option as nosuid"
 fi
 # ======================================
@@ -91,7 +107,7 @@ if [ $flag_007 -eq 0 ]; then
     #sed -i "s/Options.*/Options=mode=1777,strictatime,nosuid,nodev,noexec/" /usr/lib/systemd/system/tmp.mount
     #sudo systemctl daemon-reload
     #sudo systemctl restart tmp.mount
-    # set_flag flag_007
+    # set_flag flag_007 1
     #log_append "[TWGCB-01-008-0007][FIX] set /tmp option as noexec"
     log_append "[TWGCB-01-008-0007][IGNORE] 設定後影響服務使用"
 fi
@@ -99,12 +115,14 @@ fi
 # TWGCB-01-008-0008
 # 需為/var配置獨立之分割磁區或邏輯磁區
 if [ $flag_008 -eq 0 ]; then
+    set_flag flag_008 2
     log_append "[TWGCB-01-008-0008][IGNORE] 需要重建VM或擴充磁碟"
 fi
 # ======================================
 # TWGCB-01-008-0009
 # 需為/var/tmp配置獨立之分割磁區或邏輯磁區
 if [ $flag_009 -eq 0 ]; then
+    set_flag flag_008 2
     log_append "[TWGCB-01-008-0009][IGNORE] 需要重建VM或擴充磁碟"
 fi
 # ======================================
@@ -153,15 +171,18 @@ if [ $flag_010 -eq 0 ] || [ $flag_011 -eq 0 ] || [ $flag_012 -eq 0 ]; then
     print
     }
     ' /etc/fstab > /etc/fstab.tmp && mv /etc/fstab.tmp /etc/fstab; then
-        set_flag flag_010
+        set_flag flag_010 1
         log_append "[TWGCB-01-008-0010][FIX] add nodev option to /var/tmp in /etc/fstab"
-        set_flag flag_011
+        set_flag flag_011 1
         log_append "[TWGCB-01-008-0011][FIX] add nosuid option to /var/tmp in /etc/fstab"
-        set_flag flag_012
+        set_flag flag_012 1
         log_append "[TWGCB-01-008-0012][FIX] add noexec option to /var/tmp in /etc/fstab"
     else
+        set_flag flag_010 0
         log_append "[TWGCB-01-008-0010][ERROR] failed to update /etc/fstab for nodev option on /var/tmp"
+        set_flag flag_011 0
         log_append "[TWGCB-01-008-0011][ERROR] failed to update /etc/fstab for nosuid option on /var/tmp"
+        set_flag flag_012 0
         log_append "[TWGCB-01-008-0012][ERROR] failed to update /etc/fstab for noexec option on /var/tmp"
     fi
     # 重新掛載
@@ -172,18 +193,21 @@ fi
 # TWGCB-01-008-0013
 # 需為/var/log配置獨立之分割磁區或邏輯磁區
 if [ $flag_013 -eq 0 ]; then
+    set_flag flag_013 2
     log_append "[TWGCB-01-008-0013][IGNORE] 需要重建VM或擴充磁碟"
 fi
 # ======================================
 # TWGCB-01-008-0014
 # 需為/var/log/audit配置獨立之分割磁區或邏輯磁區
 if [ $flag_014 -eq 0 ]; then
+    set_flag flag_014 2
     log_append "[TWGCB-01-008-0014][IGNORE] 需要重建VM或擴充磁碟"
 fi
 # ======================================
 # TWGCB-01-008-0015
 # 需為/home配置獨立之分割磁區或邏輯磁區
 if [ $flag_015 -eq 0 ]; then
+    set_flag flag_015 2
     log_append "[TWGCB-01-008-0015][IGNORE] 需要重建VM或擴充磁碟"
 fi
 # ======================================
@@ -224,9 +248,10 @@ if [ $flag_016 -eq 0 ]; then
     print
     }
     ' /etc/fstab > /etc/fstab.tmp && mv /etc/fstab.tmp /etc/fstab; then
-        set_flag flag_016
+        set_flag flag_016 1
         log_append "[TWGCB-01-008-0016][FIX] add nodev option to /home in /etc/fstab"
     else
+        set_flag flag_016 0
         log_append "[TWGCB-01-008-0016][ERROR] failed to update /etc/fstab for nodev option on /home"
     fi
     # 重新掛載
@@ -326,8 +351,11 @@ if [ $flag_023 -eq 0 ] || [ $flag_024 -eq 0 ] || [ $flag_025 -eq 0 ]; then
             set_flag flag_025 1
             log_append "[TWGCB-01-008-0025][IGNORE] 設定後影響服務使用"
         else
+            set_flag flag_023 0
             log_append "[TWGCB-01-008-0023][ERROR] failed to update /etc/fstab for nodev option on /home"
+            set_flag flag_024 0
             log_append "[TWGCB-01-008-0024][ERROR] failed to update /etc/fstab for nosuid option on /home"
+            set_flag flag_025 0
             log_append "[TWGCB-01-008-0025][IGNORE] 設定後影響服務使用"
         fi
         # 重新掛載
@@ -386,8 +414,11 @@ if [ $flag_026 -eq 0 ] || [ $flag_027 -eq 0 ] || [ $flag_028 -eq 0 ]; then
             set_flag flag_028 1
             log_append "[TWGCB-01-008-0028][FIX] add noexec option to NFS mount points in /etc/fstab"
         else
+            set_flag flag_026 0
             log_append "[TWGCB-01-008-0026][ERROR] failed to update /etc/fstab for nodev option on NFS mount points"
+            set_flag flag_027 0
             log_append "[TWGCB-01-008-0027][ERROR] failed to update /etc/fstab for nosuid option on NFS mount points"
+            set_flag flag_028 0
             log_append "[TWGCB-01-008-0028][ERROR] failed to update /etc/fstab for noexec option on NFS mount points"
         fi
         # 重新掛載
@@ -401,8 +432,10 @@ if [ $flag_029 -eq 0 ]; then
     dirs=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -type d -perm -0002 ! -perm -1000 2>/dev/null)
     for dir in $dirs; do
         if chmod +t "$dir"; then
+            set_flag flag_029 1
             log_append "[TWGCB-01-008-0029][FIX] set sticky bit on world-writable directory: $dir"
         else
+            set_flag flag_029 0
             log_append "[TWGCB-01-008-0029][ERROR] failed to set sticky bit on world-writable directory: $dir"
         fi
     done
@@ -415,6 +448,7 @@ if [ $flag_030 -eq 0 ]; then
         set_flag flag_030 1
         log_append "[TWGCB-01-008-0030][FIX] disable autofs service"
     else
+        set_flag flag_030 0
         log_append "[TWGCB-01-008-0030][ERROR] failed to disable autofs service"
     fi
 fi
@@ -441,6 +475,7 @@ if [ $flag_032 -eq 0 ]; then
     repo_files=(/etc/yum.repos.d/*.repo)
     shopt -u nullglob
     if [ ${#repo_files[@]} -eq 0 ]; then
+        set_flag flag_032 0
         log_append "[TWGCB-01-008-0032][ERROR] No .repo files found in /etc/yum.repos.d/, cannot set repo gpgcheck"
     else
         for repo in "${repo_files[@]}"; do
@@ -488,6 +523,7 @@ if [ $flag_033 -eq 0 ]; then
         set_flag flag_033 1
         log_append "[TWGCB-01-008-0033][FIX] install sudo package"
     else
+        set_flag flag_033 0
         log_append "[TWGCB-01-008-0033][ERROR] failed to install sudo package"
     fi
 fi
@@ -519,6 +555,7 @@ if [ $flag_036 -eq 0 ]; then
         set_flag flag_036 1
         log_append "[TWGCB-01-008-0036][FIX] install AIDE package"
     else
+        set_flag flag_036 0
         log_append "[TWGCB-01-008-0036][ERROR] failed to install AIDE package"
     fi
 fi
@@ -527,6 +564,7 @@ fi
 # 定期檢查檔案系統完整性
 # 相依TWGCB-01-008-0036
 if [ $flag_036 -eq 0 ]; then
+    set_flag flag_037 2
     log_append "[TWGCB-01-008-0037][IGNORE] 需要先安裝AIDE套件"
 elif [ $flag_036 -eq 1 ] && [ $flag_037 -eq 0 ]; then
     current="$(crontab -l 2>/dev/null || true)"
@@ -543,20 +581,21 @@ if [ $flag_038 -eq 0 ] || [ $flag_039 -eq 0 ]; then
     files=(/boot/grub2/grub.cfg /boot/efi/EFI/rocky/grub.cfg /boot/grub2/user.cfg /boot/grub2/grubenv)
     for file in "${files[@]}"; do
         if [ -f "$file" ]; then
-            echo "$file: setting ownership to root:root and permissions to 600"
+            log_append "[TWGCB-01-008-0038]TWGCB[INFO] $file: setting ownership to root:root and permissions to 600"
             chown root:root "$file"
             chmod 600 "$file"
         fi
     done
     set_flag flag_038 1
     set_flag flag_039 1
-    log_append "[TWGCB-01-008-0038][FIX] set ownership of boot loader config files to root:root"
+    log_append "[TWGCB-01-008-0038]TWGCB[FIX] set ownership of boot loader config files to root:root"
     log_append "[TWGCB-01-008-0039][FIX] set permissions of boot loader config files to 600"
 fi
 # ======================================
 # TWGCB-01-008-0040
 # 開機載入程式之密碼
 if [ $flag_040 -eq 0 ]; then
+    set_flag flag_040 2
     log_append "[TWGCB-01-008-0040][IGNORE] 影響後續維運，需要手動設定GRUB密碼，請參考官方文件進行設定"
 fi
 # ======================================
@@ -596,6 +635,7 @@ if [ $flag_041 -eq 0 ]; then
         set_flag flag_041 1
         log_append "[TWGCB-01-008-0041][FIX] ensure rescue and emergency services use systemd-sulogin-shell for authentication"
     else
+        set_flag flag_041 0
         log_append "[TWGCB-01-008-0041][ERROR] rescue and emergency services do not use systemd-sulogin-shell for authentication, manual review and fix required"
     fi
 fi
@@ -603,7 +643,7 @@ fi
 # TWGCB-01-008-0042
 # 停用核心傾印(Core dump)功能
 if [ $flag_042 -eq 0 ]; then
-    set_flag flag_042 1
+    set_flag flag_042 2
     log_append "[TWGCB-01-008-0042][IGNORE] 影響Sipx服務使用，請評估後手動設定"
 fi
 # ======================================
@@ -628,6 +668,7 @@ if [ $flag_044 -eq 0 ];then
         set_flag flag_044 1
         log_append "[TWGCB-01-008-0044][FIX] set system-wide crypto policy to FUTURE"
     else
+        set_flag flag_044 0
         log_append "[TWGCB-01-008-0044][ERROR] /etc/crypto-policies/config not found, cannot set crypto policy"
     fi
 fi
@@ -768,11 +809,12 @@ if [ $flag_061 -eq 0 ]; then
     for file in $files; do
         if chmod o-w "$file"; then
             log_append "[TWGCB-01-008-0061][FIX] removed world-writable permission from file: $file"
+            set_flag flag_061 1
         else
             log_append "[TWGCB-01-008-0061][ERROR] failed to remove world-writable permission from file: $file"
+            set_flag flag_061 0
         fi
     done
-    set_flag flag_061 1
 fi
 # ======================================
 # TWGCB-01-008-0062
@@ -800,8 +842,10 @@ if [ $flag_062 -eq 0 ]; then
             log_append "[TWGCB-01-008-0062][FIX] all invalid UID entries fixed"
         else
             log_append "[TWGCB-01-008-0062][ERROR] some invalid UID entries could not be fixed, please check the log"
+            set_flag flag_062 0
         fi
     else
+        set_flag flag_062 0
         log_append "[TWGCB-01-008-0062][ERROR] no invalid UID entries file found"
     fi
 fi
@@ -819,7 +863,7 @@ if [ $flag_063 -eq 0 ]; then
                 continue
             fi
             if chown root:root "$path"; then
-                log_append "[TWGCB-01-008-0063][FIX] changed ownership of $path to root:root from gid=$gid group=$group"
+                log_append "[TWGCB-01-008-0063][INFO] changed ownership of $path to root:root from gid=$gid group=$group"
             else
                 log_append "[TWGCB-01-008-0063][ERROR] failed to change ownership of $path to root:root (gid=$gid)"
                 fail=$((fail + 1))
@@ -829,11 +873,14 @@ if [ $flag_063 -eq 0 ]; then
             set_flag flag_063 1
             rm -f /tmp/gcb_063_invalid_gid_entries.txt
             log_append "[TWGCB-01-008-0063][FIX] all invalid GID entries fixed"
+            set_flag flag_063 1
         else
             log_append "[TWGCB-01-008-0063][ERROR] some invalid GID entries could not be fixed, please check the log"
+            set_flag flag_063 0
         fi
     else
         log_append "[TWGCB-01-008-0063][ERROR] no invalid GID entries file found"
+        set_flag flag_063 0
     fi
 fi
 # ======================================
@@ -850,21 +897,89 @@ if [ $flag_064 -eq 0 ]; then
                 continue
             fi
             if chown root:root "$path"; then
-                log_append "[TWGCB-01-008-0064][FIX] changed ownership of $path to root:root from uid=$uid user=$user"
+                log_append "[TWGCB-01-008-0064][INFO] changed ownership of $path to root:root from uid=$uid user=$user"
             else
                 log_append "[TWGCB-01-008-0064][ERROR] failed to change ownership of $path to root:root (uid=$uid)"
                 fail=$((fail + 1))
             fi
         done < /tmp/gcb_064_invalid_world_writable_dirs.txt
         if [ $fail -eq 0 ]; then
-            set_flag flag_064 1
             rm -f /tmp/gcb_064_invalid_world_writable_dirs.txt
             log_append "[TWGCB-01-008-0064][FIX] all invalid world-writable directories fixed"
+            set_flag flag_064 1
         else
             log_append "[TWGCB-01-008-0064][ERROR] some invalid world-writable directories could not be fixed, please check the log"
+            set_flag flag_064 0
         fi
     else
         log_append "[TWGCB-01-008-0064][ERROR] no invalid world-writable directories file found"
+        set_flag flag_064 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0065
+# 所有具有全域寫入權限的目錄擁有群組需為root或其他系統群組
+if [ $flag_065 -eq 0 ]; then
+    if [ -s /tmp/gcb_065_invalid_world_writable_dirs_groups.txt ]; then
+        fail=0
+        while read -r gid group path; do
+            [ -z "$path" ] && continue
+            if [ ! -d "$path" ]; then
+                log_append "[TWGCB-01-008-0065][ERROR] path not exists, skip: gid=$gid group=$group path=$path"
+                fail=$((fail + 1))
+                continue
+            fi
+            if chown root:root "$path"; then
+                log_append "[TWGCB-01-008-0065][INFO] changed ownership of $path to root:root from gid=$gid group=$group"
+            else
+                log_append "[TWGCB-01-008-0065][ERROR] failed to change ownership of $path to root:root (gid=$gid)"
+                fail=$((fail + 1))
+            fi
+        done < /tmp/gcb_065_invalid_world_writable_dirs_groups.txt
+        if [ $fail -eq 0 ]; then
+            rm -f /tmp/gcb_065_invalid_world_writable_dirs_groups.txt
+            log_append "[TWGCB-01-008-0065][FIX] all invalid world-writable directories fixed"
+            set_flag flag_065 1
+        else
+            log_append "[TWGCB-01-008-0065][ERROR] some invalid world-writable directories could not be fixed, please check the log"
+            set_flag flag_065 0
+        fi
+    else
+        log_append "[TWGCB-01-008-0065][ERROR] no invalid world-writable directories file found"
+        set_flag flag_065 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0066
+# 需設定系統命令檔案權限，使系統命令檔案具有755或更低權限
+if [ $flag_066 -eq 0 ]; then
+    if [ -s /tmp/gcb_066_invalid_command_files.txt ]; then
+        fail=0
+        while read -r perm path; do
+            [ -z "$path" ] && continue
+            if [ ! -f "$path" ]; then
+                log_append "[TWGCB-01-008-0066][ERROR] path not exists, skip: perm=$perm path=$path"
+                fail=$((fail + 1))
+                continue
+            fi
+            if chmod 755 "$path"; then
+                log_append "[TWGCB-01-008-0066][INFO] changed permissions of $path to 755 from perm=$perm"
+            else
+                log_append "[TWGCB-01-008-0066][ERROR] failed to change permissions of $path to 755 (perm=$perm)"
+                fail=$((fail + 1))
+            fi
+        done < /tmp/gcb_066_invalid_command_files.txt
+        if [ $fail -eq 0 ]; then
+            rm -f /tmp/gcb_066_invalid_command_files.txt
+            log_append "[TWGCB-01-008-0066][FIX] all invalid command files fixed"
+            set_flag flag_066 1
+        else
+            log_append "[TWGCB-01-008-0066][ERROR] some invalid command files could not be fixed, please check the log"
+            set_flag flag_066 0
+        fi
+    else
+        log_append "[TWGCB-01-008-0066][ERROR] no invalid command files file found"
+        set_flag flag_066 0
     fi
 fi
 # ======================================
@@ -876,12 +991,7 @@ fi
 # ======================================
 # ======================================
 # ======================================
-# ======================================
-# ======================================
 
-success=$(cat $log | grep "\[FIX\]" | wc -l)
-ignore=$(cat $log | grep "\[IGNORE\]" | wc -l)
-error=$(cat $log | grep "\[ERROR\]" | wc -l)
 echo
 echo "Summary: $success fixes applied, $ignore fixes ignored, $error errors occurred."
 echo "Fix completed. Please reboot the system and review the log file for details."
