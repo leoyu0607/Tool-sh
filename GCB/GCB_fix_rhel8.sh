@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script checks if the operating system is RHEL 8  
-##version:20260214
+##version:20260217
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root"
@@ -983,6 +983,42 @@ if [ $flag_066 -eq 0 ]; then
     fi
 fi
 # ======================================
+# TWGCB-01-008-0067
+# 需設定系統命令檔案權限，使系統命令檔案擁有者為root
+# TWGCB-01-008-0068
+# 需設定系統命令檔案權限，使系統命令檔案擁有群組為root
+if [ $flag_067 -eq 0 ] || [ $flag_068 -eq 0 ]; then
+    invalid_command_files=$(
+    find -L /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin \
+        -xdev -type f ! \( -user root  -a -group root \) -printf '%U %u %G %g %p\n' 2>/dev/null \
+    | sort -u
+    )
+    fail=0
+    while read -r uid user gid group path; do
+        [ -z "$path" ] && continue
+        if [ ! -f "$path" ]; then
+            log_append "[TWGCB-01-008-0067/0068][ERROR] path not exists, skip: perm=$perm uid=$uid group=$group path=$path"
+            continue
+        fi
+        if chown root:root "$path"; then
+            log_append "[TWGCB-01-008-0067/0068][INFO] changed ownership of $path to root:root from uid=$uid group=$group"
+        else
+            fail=$((fail + 1))
+            log_append "[TWGCB-01-008-0067/0068][ERROR] failed to change ownership of $path to root:root (uid=$uid group=$group)"
+        fi
+    done <<< "$invalid_command_files"
+    if [ $fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0067][FIX] all invalid command files fixed"
+        log_append "[TWGCB-01-008-0068][FIX] all invalid command files fixed"
+        set_flag flag_067 1
+        set_flag flag_068 1
+    else
+        log_append "[TWGCB-01-008-0067][ERROR] some invalid command files could not be fixed, please check the log"
+        log_append "[TWGCB-01-008-0068][ERROR] some invalid command files could not be fixed, please check the log"
+        set_flag flag_067 0
+        set_flag flag_068 0
+    fi
+fi
 # ======================================
 # ======================================
 # ======================================

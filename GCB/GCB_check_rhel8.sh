@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script checks if the operating system is RHEL 8  
-##version:20260214
+##version:20260217
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root"
@@ -1129,7 +1129,41 @@ else
     set_flag flag_066 1
 fi
 # ======================================
+# TWGCB-01-008-0067
+# 需設定系統命令檔案權限，使系統命令檔案擁有者為root
+invalid_command_files=$(
+  find -L /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin \
+    -xdev -type f ! -user root -printf '%U %u %p\n' 2>/dev/null \
+  | sort -u
+)
+if [ -n "$invalid_command_files" ]; then
+    log_append "[TWGCB-01-008-0067][FAIL] Found executable files not owned by root"
+    echo "$invalid_command_files" | while read -r ownerId ownerName fileName; do
+        log_append "[TWGCB-01-008-0067][INFO] Command File: $fileName, Owner User Id: $ownerId, Owner User Name: $ownerName"
+    done
+    set_flag flag_067 0
+else
+    log_append "[TWGCB-01-008-0067][PASS] All executable files are owned by root"
+    set_flag flag_067 1
+fi
 # ======================================
+# TWGCB-01-008-0068
+# 需設定系統命令檔案權限，使系統命令檔案擁有群組為root
+invalid_command_files=$(
+  find -L /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin \
+    -xdev -type f ! -group root -printf '%G %g %p\n' 2>/dev/null \
+  | sort -u
+)
+if [ -n "$invalid_command_files" ]; then
+    log_append "[TWGCB-01-008-0068][FAIL] Found executable files not owned by root group"
+    echo "$invalid_command_files" | while read -r ownerId ownerName fileName; do
+        log_append "[TWGCB-01-008-0068][INFO] Command File: $fileName, Owner Group Id: $ownerId, Owner Group Name: $ownerName"
+    done
+    set_flag flag_068 0
+else
+    log_append "[TWGCB-01-008-0068][PASS] All executable files are owned by root group"
+    set_flag flag_068 1
+fi
 # ======================================
 # ======================================
 # ======================================
