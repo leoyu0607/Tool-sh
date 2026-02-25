@@ -990,21 +990,24 @@ fi
 if [ $flag_067 -eq 0 ] || [ $flag_068 -eq 0 ]; then
     invalid_command_files=$(
     find -L /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin \
-        -xdev -type f ! \( -user root  -a -group root \) -printf '%U %u %G %g %p\n' 2>/dev/null \
+        -xdev -type f ! \( -user root -a \( -group root -o -group tty -o -group slocate -o -group lock \) \) -printf '%U %u %G %g %p\n' 2>/dev/null \
     | sort -u
     )
     fail=0
     while read -r uid user gid group path; do
         [ -z "$path" ] && continue
         if [ ! -f "$path" ]; then
-            log_append "[TWGCB-01-008-0067/0068][ERROR] path not exists, skip: perm=$perm uid=$uid group=$group path=$path"
+            log_append "[TWGCB-01-008-0067][ERROR] path not exists, skip: perm=$perm uid=$uid group=$group path=$path"
+            log_append "[TWGCB-01-008-0068][ERROR] path not exists, skip: perm=$perm uid=$uid group=$group path=$path"
             continue
         fi
         if chown root:root "$path"; then
-            log_append "[TWGCB-01-008-0067/0068][INFO] changed ownership of $path to root:root from uid=$uid group=$group"
+            log_append "[TWGCB-01-008-0067][INFO] changed ownership of $path to root:root from uid=$uid group=$group"
+            log_append "[TWGCB-01-008-0068][INFO] changed ownership of $path to root:root from uid=$uid group=$group"
         else
             fail=$((fail + 1))
-            log_append "[TWGCB-01-008-0067/0068][ERROR] failed to change ownership of $path to root:root (uid=$uid group=$group)"
+            log_append "[TWGCB-01-008-0067][ERROR] failed to change ownership of $path to root:root (uid=$uid group=$group)"
+            log_append "[TWGCB-01-008-0068][ERROR] failed to change ownership of $path to root:root (uid=$uid group=$group)"
         fi
     done <<< "$invalid_command_files"
     if [ $fail -eq 0 ]; then
@@ -1020,7 +1023,78 @@ if [ $flag_067 -eq 0 ] || [ $flag_068 -eq 0 ]; then
     fi
 fi
 # ======================================
+# TWGCB-01-008-0069
+# 需設定程式庫檔案權限，使程式庫檔案具有755或更低權限
+if [ $flag_069 -eq 0 ]; then
+    if [ -s /tmp/gcb_069_invalid_library_files.txt ]; then
+        fail=0
+        while read -r perm path; do
+            [ -z "$path" ] && continue
+            if [ ! -f "$path" ]; then
+                log_append "[TWGCB-01-008-0069][ERROR] path not exists, skip: perm=$perm path=$path"
+                fail=$((fail + 1))
+                continue
+            fi
+            if chmod 755 "$path"; then
+                log_append "[TWGCB-01-008-0069][INFO] changed permissions of $path to 755 from perm=$perm"
+            else
+                log_append "[TWGCB-01-008-0069][ERROR] failed to change permissions of $path to 755 (perm=$perm)"
+                fail=$((fail + 1))
+            fi
+        done < /tmp/gcb_069_invalid_library_files.txt
+        if [ $fail -eq 0 ]; then
+            rm -f /tmp/gcb_069_invalid_library_files.txt
+            log_append "[TWGCB-01-008-0069][FIX] all invalid library files fixed"
+            set_flag flag_069 1
+        else
+            log_append "[TWGCB-01-008-0069][ERROR] some invalid library files could not be fixed, please check the log"
+            set_flag flag_069 0
+        fi
+    else
+        log_append "[TWGCB-01-008-0069][ERROR] no invalid library files file found"
+        set_flag flag_069 0
+    fi
+fi
 # ======================================
+# TWGCB-01-008-0070
+# 需設定程式庫檔案權限，使程式庫檔案擁有者為root
+# TWGCB-01-008-0071
+# 需設定程式庫檔案權限，使程式庫檔案擁有群組為root
+if [ $flag_070 -eq 0 ] || [ $flag_071 -eq 0 ]; then
+    invalid_library_files=$(
+    find -L /lib /lib64 /usr/lib /usr/lib64 \
+        -xdev -type f ! \( -user root -a -group root \) -printf '%U %u %G %g %p\n' 2>/dev/null \
+    | sort -u
+    )
+    fail=0
+    while read -r uid user gid group path; do
+        [ -z "$path" ] && continue
+        if [ ! -f "$path" ]; then
+            log_append "[TWGCB-01-008-0070][ERROR] path not exists, skip: perm=$perm uid=$uid group=$group path=$path"
+            log_append "[TWGCB-01-008-0071][ERROR] path not exists, skip: perm=$perm uid=$uid group=$group path=$path"
+            continue
+        fi
+        if chown root:root "$path"; then
+            log_append "[TWGCB-01-008-0070][INFO] changed ownership of $path to root:root from uid=$uid group=$group"
+            log_append "[TWGCB-01-008-0071][INFO] changed ownership of $path to root:root from uid=$uid group=$group"
+        else
+            fail=$((fail + 1))
+            log_append "[TWGCB-01-008-0070][ERROR] failed to change ownership of $path to root:root (uid=$uid group=$group)"
+            log_append "[TWGCB-01-008-0071][ERROR] failed to change ownership of $path to root:root (uid=$uid group=$group)"
+        fi
+    done <<< "$invalid_library_files"
+    if [ $fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0070][FIX] all invalid library files fixed"
+        log_append "[TWGCB-01-008-0071][FIX] all invalid library files fixed"
+        set_flag flag_070 1
+        set_flag flag_071 1
+    else
+        log_append "[TWGCB-01-008-0070][ERROR] some invalid library files could not be fixed, please check the log"
+        log_append "[TWGCB-01-008-0071][ERROR] some invalid library files could not be fixed, please check the log"
+        set_flag flag_070 0
+        set_flag flag_071 0
+    fi
+fi
 # ======================================
 # ======================================
 # ======================================

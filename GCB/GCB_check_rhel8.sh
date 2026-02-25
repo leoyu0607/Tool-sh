@@ -1151,13 +1151,13 @@ fi
 # 需設定系統命令檔案權限，使系統命令檔案擁有群組為root
 invalid_command_files=$(
   find -L /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin \
-    -xdev -type f ! -group root -printf '%G %g %p\n' 2>/dev/null \
+    -xdev -type f ! -group root ! -group tty ! -group slocate ! -group lock -printf '%G %g %p\n' 2>/dev/null \
   | sort -u
 )
 if [ -n "$invalid_command_files" ]; then
     log_append "[TWGCB-01-008-0068][FAIL] Found executable files not owned by root group"
-    echo "$invalid_command_files" | while read -r ownerId ownerName fileName; do
-        log_append "[TWGCB-01-008-0068][INFO] Command File: $fileName, Owner Group Id: $ownerId, Owner Group Name: $ownerName"
+    echo "$invalid_command_files" | while read -r groupId groupName fileName; do
+        log_append "[TWGCB-01-008-0068][INFO] Command File: $fileName, Owner Group Id: $groupId, Owner Group Name: $groupName"
     done
     set_flag flag_068 0
 else
@@ -1165,9 +1165,74 @@ else
     set_flag flag_068 1
 fi
 # ======================================
+# TWGCB-01-008-0069
+# 需設定程式庫檔案權限，使程式庫檔案具有755或更低權限
+invalid_library_files=$(
+  find -L /lib /lib64 /usr/lib /usr/lib64 \
+    -xdev -type f -perm /0022 -printf '%m %p\n' 2>/dev/null \
+  | sort -u
+)
+if [ -n "$invalid_library_files" ]; then
+    echo "$invalid_library_files" > /tmp/gcb_069_invalid_library_files.txt
+    log_append "[TWGCB-01-008-0069][FAIL] Found library files with permissions more permissive than 755"
+    echo "$invalid_library_files" | while read -r perm fileName; do
+        log_append "[TWGCB-01-008-0069][INFO] Library File: $fileName, Permission: $perm"
+    done
+    set_flag flag_069 0
+else
+    log_append "[TWGCB-01-008-0069][PASS] All library files have permissions of 755 or more restrictive"
+    set_flag flag_069 1
+fi
 # ======================================
+# TWGCB-01-008-0070
+# 需設定程式庫檔案權限，使程式庫檔案擁有者為root
+invalid_library_files=$(
+  find -L /lib /lib64 /usr/lib /usr/lib64 \
+    -xdev -type f ! -user root -printf '%U %u %p\n' 2>/dev/null \
+  | sort -u
+)
+if [ -n "$invalid_library_files" ]; then
+    log_append "[TWGCB-01-008-0070][FAIL] Found library files not owned by root"
+    echo "$invalid_library_files" | while read -r ownerId ownerName fileName; do
+        log_append "[TWGCB-01-008-0070][INFO] Library File: $fileName, Owner User Id: $ownerId, Owner User Name: $ownerName"
+    done
+    set_flag flag_070 0
+else
+    log_append "[TWGCB-01-008-0070][PASS] All library files are owned by root"
+    set_flag flag_070 1
+fi
 # ======================================
+# TWGCB-01-008-0071
+# 需設定程式庫檔案權限，使程式庫檔案擁有群組為root
+invalid_library_files=$(
+  find -L /lib /lib64 /usr/lib /usr/lib64 \
+    -xdev -type f ! -group root -printf '%G %g %p\n' 2>/dev/null \
+  | sort -u
+)
+if [ -n "$invalid_library_files" ]; then
+    log_append "[TWGCB-01-008-0071][FAIL] Found library files not owned by root group"
+    echo "$invalid_library_files" | while read -r groupId groupName fileName; do
+        log_append "[TWGCB-01-008-0071][INFO] Library File: $fileName, Owner Group Id: $groupId, Owner Group Name: $groupName"
+    done
+    set_flag flag_071 0
+else
+    log_append "[TWGCB-01-008-0071][PASS] All library files are owned by root group"
+    set_flag flag_071 1
+fi
 # ======================================
+# TWGCB-01-008-0072
+# 帳號不使用空白密碼
+empty_password_users=$(awk -F: '($2 == "") {print $1}' /etc/shadow)
+if [ -n "$empty_password_users" ]; then
+    log_append "[TWGCB-01-008-0072][FAIL] Found accounts with empty passwords:"
+    echo "$empty_password_users" | while read -r user; do
+        log_append "[TWGCB-01-008-0072][INFO] User with empty password: $user"
+    done
+    set_flag flag_072 0
+else
+    log_append "[TWGCB-01-008-0072][PASS] No accounts with empty passwords found"
+    set_flag flag_072 1
+fi
 # ======================================
 # ======================================
 # ======================================
