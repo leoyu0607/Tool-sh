@@ -1,1 +1,7 @@
 .DS_Store
+*.docx
+settings.local.json
+.claude/
+*items.txt
+item*.txt
+extensions.json

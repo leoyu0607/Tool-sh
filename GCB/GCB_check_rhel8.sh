@@ -1234,13 +1234,2103 @@ else
     set_flag flag_072 1
 fi
 # ======================================
+# TWGCB-01-008-0073
+# root帳號的路徑變數不包含「.」、「..」、路徑開頭不是「/」及空元素
+path_fail=0
+IFS=':' read -ra PATH_DIRS <<< "$PATH"
+for dir in "${PATH_DIRS[@]}"; do
+    if [ -z "$dir" ]; then
+        log_append "[TWGCB-01-008-0073][FAIL] PATH contains empty element"
+        path_fail=1
+    elif [ "$dir" = "." ] || [ "$dir" = ".." ]; then
+        log_append "[TWGCB-01-008-0073][FAIL] PATH contains relative path: $dir"
+        path_fail=1
+    elif [[ "$dir" != /* ]]; then
+        log_append "[TWGCB-01-008-0073][FAIL] PATH contains path not starting with /: $dir"
+        path_fail=1
+    fi
+done
+if [ $path_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0073][PASS] root PATH does not contain relative or empty elements (PATH=$PATH)"
+    set_flag flag_073 1
+else
+    log_append "[TWGCB-01-008-0073][FAIL] root PATH contains invalid elements (PATH=$PATH)"
+    set_flag flag_073 0
+fi
 # ======================================
+# TWGCB-01-008-0074
+# root帳號的路徑變數不包含world-writable或group-writable目錄
+path_writable_fail=0
+IFS=':' read -ra PATH_DIRS <<< "$PATH"
+for dir in "${PATH_DIRS[@]}"; do
+    [ -z "$dir" ] && continue
+    if [ -d "$dir" ]; then
+        perms=$(stat -c "%a" "$dir")
+        # 檢查 group-writable (g+w): octal bit 020
+        if [ $(( 8#${perms: -3} & 8#020 )) -ne 0 ]; then
+            log_append "[TWGCB-01-008-0074][FAIL] PATH directory is group-writable: $dir (permission: $perms)"
+            path_writable_fail=1
+        fi
+        # 檢查 world-writable (o+w): octal bit 002
+        if [ $(( 8#${perms: -3} & 8#002 )) -ne 0 ]; then
+            log_append "[TWGCB-01-008-0074][FAIL] PATH directory is world-writable: $dir (permission: $perms)"
+            path_writable_fail=1
+        fi
+    fi
+done
+if [ $path_writable_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0074][PASS] root PATH does not contain world-writable or group-writable directories"
+    set_flag flag_074 1
+else
+    set_flag flag_074 0
+fi
 # ======================================
+# TWGCB-01-008-0075
+# /etc/passwd檔案行首的「+」符號需禁止
+if grep -q '^\+:' /etc/passwd; then
+    log_append "[TWGCB-01-008-0075][FAIL] /etc/passwd contains lines starting with '+'"
+    grep '^\+:' /etc/passwd | while read -r line; do
+        log_append "[TWGCB-01-008-0075][INFO] Found entry: $line"
+    done
+    set_flag flag_075 0
+else
+    log_append "[TWGCB-01-008-0075][PASS] /etc/passwd does not contain lines starting with '+'"
+    set_flag flag_075 1
+fi
 # ======================================
+# TWGCB-01-008-0076
+# /etc/shadow檔案行首的「+」符號需禁止
+if grep -q '^\+:' /etc/shadow; then
+    log_append "[TWGCB-01-008-0076][FAIL] /etc/shadow contains lines starting with '+'"
+    grep '^\+:' /etc/shadow | while read -r line; do
+        log_append "[TWGCB-01-008-0076][INFO] Found entry: $line"
+    done
+    set_flag flag_076 0
+else
+    log_append "[TWGCB-01-008-0076][PASS] /etc/shadow does not contain lines starting with '+'"
+    set_flag flag_076 1
+fi
 # ======================================
+# TWGCB-01-008-0077
+# /etc/group檔案行首的「+」符號需禁止
+if grep -q '^\+:' /etc/group; then
+    log_append "[TWGCB-01-008-0077][FAIL] /etc/group contains lines starting with '+'"
+    grep '^\+:' /etc/group | while read -r line; do
+        log_append "[TWGCB-01-008-0077][INFO] Found entry: $line"
+    done
+    set_flag flag_077 0
+else
+    log_append "[TWGCB-01-008-0077][PASS] /etc/group does not contain lines starting with '+'"
+    set_flag flag_077 1
+fi
 # ======================================
+# TWGCB-01-008-0078
+# 僅root帳號之UID為0
+uid0_accounts=$(awk -F: '($3 == 0) { print $1 }' /etc/passwd | grep -v '^root$')
+if [ -n "$uid0_accounts" ]; then
+    log_append "[TWGCB-01-008-0078][FAIL] Found non-root accounts with UID=0:"
+    echo "$uid0_accounts" | while read -r account; do
+        log_append "[TWGCB-01-008-0078][INFO] Account with UID=0: $account"
+    done
+    set_flag flag_078 0
+else
+    log_append "[TWGCB-01-008-0078][PASS] Only root has UID=0"
+    set_flag flag_078 1
+fi
 # ======================================
+# TWGCB-01-008-0079
+# 使用者家目錄權限須為700或更低權限
+home_perm_fail=0
+while IFS=: read -r username _ _ _ _ home shell; do
+    if [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
+        continue
+    fi
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+        continue
+    fi
+    if [ -z "$home" ] || [ "$home" = "/" ]; then
+        continue
+    fi
+    if [ ! -d "$home" ]; then
+        log_append "[TWGCB-01-008-0079][INFO] Home directory ($home) of user $username does not exist"
+        continue
+    fi
+    perm=$(stat -c "%a" "$home")
+    # 檢查 group 與 other 是否有任何權限 (last 2 octal digits should be 00)
+    if [ $(( 8#${perm: -3} & 8#077 )) -ne 0 ]; then
+        log_append "[TWGCB-01-008-0079][FAIL] Home directory ($home) of user $username has permission $perm (expected 700 or more restrictive)"
+        home_perm_fail=1
+    fi
+done < /etc/passwd
+if [ $home_perm_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0079][PASS] All user home directories have permissions of 700 or more restrictive"
+    set_flag flag_079 1
+else
+    set_flag flag_079 0
+fi
 # ======================================
+# TWGCB-01-008-0080
+# 使用者家目錄擁有者須為該使用者
+home_owner_fail=0
+while IFS=: read -r username _ _ _ _ home shell; do
+    if [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
+        continue
+    fi
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+        continue
+    fi
+    if [ -z "$home" ] || [ "$home" = "/" ]; then
+        continue
+    fi
+    if [ ! -d "$home" ]; then
+        log_append "[TWGCB-01-008-0080][INFO] Home directory ($home) of user $username does not exist"
+        continue
+    fi
+    owner=$(stat -L -c "%U" "$home")
+    if [ "$owner" != "$username" ]; then
+        log_append "[TWGCB-01-008-0080][FAIL] Home directory ($home) of user $username is owned by $owner"
+        home_owner_fail=1
+    fi
+done < /etc/passwd
+if [ $home_owner_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0080][PASS] All user home directories are owned by the respective users"
+    set_flag flag_080 1
+else
+    set_flag flag_080 0
+fi
+
+# ======================================
+# TWGCB-01-008-0081
+# 使用者家目錄擁有群組須為該使用者之群組
+home_grp_fail=0
+while IFS=: read -r username _ uid gid _ home shell; do
+    if [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
+        continue
+    fi
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+        continue
+    fi
+    if [ -z "$home" ] || [ "$home" = "/" ]; then
+        continue
+    fi
+    if [ ! -d "$home" ]; then
+        log_append "[TWGCB-01-008-0081][INFO] Home directory ($home) of user $username does not exist"
+        continue
+    fi
+    owner_gid=$(stat -L -c "%g" "$home")
+    if [ "$owner_gid" != "$gid" ]; then
+        log_append "[TWGCB-01-008-0081][FAIL] Home directory ($home) of user $username is owned by group GID $owner_gid (expected GID $gid)"
+        home_grp_fail=1
+    fi
+done < /etc/passwd
+if [ $home_grp_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0081][PASS] All user home directories are owned by the user's own group"
+    set_flag flag_081 1
+else
+    set_flag flag_081 0
+fi
+# ======================================
+# TWGCB-01-008-0082
+# 使用者家目錄的「.」開頭檔案權限須為go-w或更低權限
+dot_perm_fail=0
+while IFS=: read -r username _ _ _ _ home shell; do
+    if [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
+        continue
+    fi
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+        continue
+    fi
+    if [ -z "$home" ] || [ "$home" = "/" ]; then
+        continue
+    fi
+    if [ ! -d "$home" ]; then
+        continue
+    fi
+    for dotfile in "$home"/.[A-Za-z0-9]*; do
+        [ -h "$dotfile" ] && continue
+        [ ! -f "$dotfile" ] && continue
+        fileperm=$(ls -ld "$dotfile" | cut -f1 -d" ")
+        if [ "$(echo "$fileperm" | cut -c6)" != "-" ]; then
+            log_append "[TWGCB-01-008-0082][FAIL] Group write permission set on dot file: $dotfile (perm: $fileperm)"
+            dot_perm_fail=1
+        fi
+        if [ "$(echo "$fileperm" | cut -c9)" != "-" ]; then
+            log_append "[TWGCB-01-008-0082][FAIL] Other write permission set on dot file: $dotfile (perm: $fileperm)"
+            dot_perm_fail=1
+        fi
+    done
+done < /etc/passwd
+if [ $dot_perm_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0082][PASS] No dot files in user home directories have group/other write permissions"
+    set_flag flag_082 1
+else
+    set_flag flag_082 0
+fi
+# ======================================
+# TWGCB-01-008-0083
+# 使用者家目錄的「.forward」檔案須移除
+forward_fail=0
+while IFS=: read -r username _ _ _ _ home shell; do
+    if [ "$username" = "root" ] || [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
+        continue
+    fi
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+        continue
+    fi
+    if [ -z "$home" ] || [ "$home" = "/" ]; then
+        continue
+    fi
+    if [ ! -d "$home" ]; then
+        continue
+    fi
+    if [ ! -h "$home/.forward" ] && [ -f "$home/.forward" ]; then
+        log_append "[TWGCB-01-008-0083][FAIL] .forward file exists for user $username: $home/.forward"
+        forward_fail=1
+    fi
+done < /etc/passwd
+if [ $forward_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0083][PASS] No .forward files found in user home directories"
+    set_flag flag_083 1
+else
+    set_flag flag_083 0
+fi
+# ======================================
+# TWGCB-01-008-0084
+# 使用者家目錄的「.netrc」檔案須移除
+netrc_fail=0
+while IFS=: read -r username _ _ _ _ home shell; do
+    if [ "$username" = "root" ] || [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
+        continue
+    fi
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+        continue
+    fi
+    if [ -z "$home" ] || [ "$home" = "/" ]; then
+        continue
+    fi
+    if [ ! -d "$home" ]; then
+        continue
+    fi
+    if [ ! -h "$home/.netrc" ] && [ -f "$home/.netrc" ]; then
+        log_append "[TWGCB-01-008-0084][FAIL] .netrc file exists for user $username: $home/.netrc"
+        netrc_fail=1
+    fi
+done < /etc/passwd
+if [ $netrc_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0084][PASS] No .netrc files found in user home directories"
+    set_flag flag_084 1
+else
+    set_flag flag_084 0
+fi
+# ======================================
+# TWGCB-01-008-0085
+# 使用者家目錄的「.rhosts」檔案須移除
+rhosts_fail=0
+while IFS=: read -r username _ _ _ _ home shell; do
+    if [ "$username" = "root" ] || [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
+        continue
+    fi
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+        continue
+    fi
+    if [ -z "$home" ] || [ "$home" = "/" ]; then
+        continue
+    fi
+    if [ ! -d "$home" ]; then
+        continue
+    fi
+    if [ ! -h "$home/.rhosts" ] && [ -f "$home/.rhosts" ]; then
+        log_append "[TWGCB-01-008-0085][FAIL] .rhosts file exists for user $username: $home/.rhosts"
+        rhosts_fail=1
+    fi
+done < /etc/passwd
+if [ $rhosts_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0085][PASS] No .rhosts files found in user home directories"
+    set_flag flag_085 1
+else
+    set_flag flag_085 0
+fi
+# ======================================
+# TWGCB-01-008-0086
+# /etc/passwd檔案中帳號的群組皆須存在於/etc/group檔案中
+gid_missing_fail=0
+while IFS= read -r gid; do
+    if ! grep -q -P "^[^:]*:[^:]*:${gid}:" /etc/group; then
+        log_append "[TWGCB-01-008-0086][FAIL] GID $gid is referenced in /etc/passwd but does not exist in /etc/group"
+        gid_missing_fail=1
+    fi
+done < <(cut -s -d: -f4 /etc/passwd | sort -u)
+if [ $gid_missing_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0086][PASS] All GIDs in /etc/passwd exist in /etc/group"
+    set_flag flag_086 1
+else
+    set_flag flag_086 0
+fi
+# ======================================
+# TWGCB-01-008-0087
+# 使用者帳號之UID須為唯一值
+dup_uid_fail=0
+while read -r count uid; do
+    if [ "$count" -gt 1 ]; then
+        users=$(awk -F: "(\$3 == $uid) { print \$1 }" /etc/passwd | tr '\n' ' ')
+        log_append "[TWGCB-01-008-0087][FAIL] Duplicate UID ($uid): $users"
+        dup_uid_fail=1
+    fi
+done < <(cut -f3 -d: /etc/passwd | sort -n | uniq -c)
+if [ $dup_uid_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0087][PASS] All user accounts have unique UIDs"
+    set_flag flag_087 1
+else
+    set_flag flag_087 0
+fi
+# ======================================
+# TWGCB-01-008-0088
+# 群組之GID須為唯一值
+dup_gid_fail=0
+while IFS= read -r gid; do
+    log_append "[TWGCB-01-008-0088][FAIL] Duplicate GID ($gid) in /etc/group"
+    dup_gid_fail=1
+done < <(cut -d: -f3 /etc/group | sort | uniq -d)
+if [ $dup_gid_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0088][PASS] All groups have unique GIDs"
+    set_flag flag_088 1
+else
+    set_flag flag_088 0
+fi
+# ======================================
+# TWGCB-01-008-0089
+# 使用者帳號名稱須為唯一值
+dup_uname_fail=0
+while IFS= read -r uname; do
+    log_append "[TWGCB-01-008-0089][FAIL] Duplicate username ($uname) in /etc/passwd"
+    dup_uname_fail=1
+done < <(cut -d: -f1 /etc/passwd | sort | uniq -d)
+if [ $dup_uname_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0089][PASS] All user account names are unique"
+    set_flag flag_089 1
+else
+    set_flag flag_089 0
+fi
+# ======================================
+# TWGCB-01-008-0090
+# 群組名稱須為唯一值
+dup_gname_fail=0
+while IFS= read -r gname; do
+    log_append "[TWGCB-01-008-0090][FAIL] Duplicate group name ($gname) in /etc/group"
+    dup_gname_fail=1
+done < <(cut -d: -f1 /etc/group | sort | uniq -d)
+if [ $dup_gname_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0090][PASS] All group names are unique"
+    set_flag flag_090 1
+else
+    set_flag flag_090 0
+fi
+
+# ======================================
+# TWGCB-01-008-0091
+# shadow群組成員須為空
+shadow_members=$(awk -F: '($1=="shadow") {print $NF}' /etc/group)
+if [ -n "$shadow_members" ]; then
+    log_append "[TWGCB-01-008-0091][FAIL] shadow group contains members: $shadow_members"
+    set_flag flag_091 0
+else
+    log_append "[TWGCB-01-008-0091][PASS] shadow group contains no members"
+    set_flag flag_091 1
+fi
+# ======================================
+# TWGCB-01-008-0092
+# xinetd套件須移除
+if rpm -q xinetd &>/dev/null; then
+    log_append "[TWGCB-01-008-0092][FAIL] xinetd package is installed and must be removed"
+    set_flag flag_092 0
+else
+    log_append "[TWGCB-01-008-0092][PASS] xinetd package is not installed"
+    set_flag flag_092 1
+fi
+# ======================================
+# TWGCB-01-008-0093
+# chrony須設定1個以上時間同步來源
+if ! rpm -q chrony &>/dev/null; then
+    log_append "[TWGCB-01-008-0093][SKIP] chrony package is not installed"
+    set_flag flag_093 2
+elif [ ! -f /etc/chrony.conf ]; then
+    log_append "[TWGCB-01-008-0093][FAIL] /etc/chrony.conf does not exist"
+    set_flag flag_093 0
+else
+    ntp_count=$(grep -cE "^(server|pool)" /etc/chrony.conf 2>/dev/null || echo 0)
+    if [ "$ntp_count" -ge 1 ]; then
+        log_append "[TWGCB-01-008-0093][PASS] chrony has $ntp_count NTP time source(s) configured"
+        set_flag flag_093 1
+    else
+        log_append "[TWGCB-01-008-0093][FAIL] chrony has no NTP server or pool configured in /etc/chrony.conf"
+        set_flag flag_093 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0094
+# rsyncd服務須停用
+if systemctl is-enabled rsyncd > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0094][FAIL] rsyncd service is enabled"
+    set_flag flag_094 0
+else
+    log_append "[TWGCB-01-008-0094][PASS] rsyncd service is disabled or not installed"
+    set_flag flag_094 1
+fi
+# ======================================
+# TWGCB-01-008-0095
+# avahi-daemon服務及socket須停用
+avahi_fail=0
+if systemctl is-enabled avahi-daemon.service > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0095][FAIL] avahi-daemon.service is enabled"
+    avahi_fail=1
+fi
+if systemctl is-enabled avahi-daemon.socket > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0095][FAIL] avahi-daemon.socket is enabled"
+    avahi_fail=1
+fi
+if [ $avahi_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0095][PASS] avahi-daemon.service and avahi-daemon.socket are both disabled or not installed"
+    set_flag flag_095 1
+else
+    set_flag flag_095 0
+fi
+# ======================================
+# TWGCB-01-008-0096
+# SNMP服務須停用（或僅啟用SNMPv3）
+if systemctl is-enabled snmpd > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0096][FAIL] snmpd service is enabled (must be disabled or configured for SNMPv3 only)"
+    set_flag flag_096 0
+else
+    log_append "[TWGCB-01-008-0096][PASS] snmpd service is disabled or not installed"
+    set_flag flag_096 1
+fi
+# ======================================
+# TWGCB-01-008-0097
+# Squid服務須停用
+if systemctl is-enabled squid > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0097][FAIL] squid service is enabled"
+    set_flag flag_097 0
+else
+    log_append "[TWGCB-01-008-0097][PASS] squid service is disabled or not installed"
+    set_flag flag_097 1
+fi
+# ======================================
+# TWGCB-01-008-0098
+# Samba服務須停用
+if systemctl is-enabled smb > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0098][FAIL] smb (Samba) service is enabled"
+    set_flag flag_098 0
+else
+    log_append "[TWGCB-01-008-0098][PASS] smb (Samba) service is disabled or not installed"
+    set_flag flag_098 1
+fi
+# ======================================
+# TWGCB-01-008-0099
+# FTP伺服器服務須停用
+if systemctl is-enabled vsftpd > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0099][FAIL] vsftpd (FTP server) service is enabled"
+    set_flag flag_099 0
+else
+    log_append "[TWGCB-01-008-0099][PASS] vsftpd (FTP server) service is disabled or not installed"
+    set_flag flag_099 1
+fi
+# ======================================
+# TWGCB-01-008-0100
+# NIS伺服器服務須停用
+if systemctl is-enabled ypserv > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0100][FAIL] ypserv (NIS server) service is enabled"
+    set_flag flag_100 0
+else
+    log_append "[TWGCB-01-008-0100][PASS] ypserv (NIS server) service is disabled or not installed"
+    set_flag flag_100 1
+fi
+
+# ======================================
+# TWGCB-01-008-0101
+# kdump服務須啟用
+if systemctl is-enabled kdump.service > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0101][PASS] kdump.service is enabled"
+    set_flag flag_101 1
+else
+    log_append "[TWGCB-01-008-0101][FAIL] kdump.service is not enabled"
+    set_flag flag_101 0
+fi
+# ======================================
+# TWGCB-01-008-0102
+# NIS用戶端套件(ypbind)須移除
+if rpm -q ypbind &>/dev/null; then
+    log_append "[TWGCB-01-008-0102][FAIL] ypbind (NIS client) package is installed and must be removed"
+    set_flag flag_102 0
+else
+    log_append "[TWGCB-01-008-0102][PASS] ypbind (NIS client) package is not installed"
+    set_flag flag_102 1
+fi
+# ======================================
+# TWGCB-01-008-0103
+# telnet用戶端套件須移除
+if rpm -q telnet &>/dev/null; then
+    log_append "[TWGCB-01-008-0103][FAIL] telnet client package is installed and must be removed"
+    set_flag flag_103 0
+else
+    log_append "[TWGCB-01-008-0103][PASS] telnet client package is not installed"
+    set_flag flag_103 1
+fi
+# ======================================
+# TWGCB-01-008-0104
+# telnet伺服器套件須移除
+if rpm -q telnet-server &>/dev/null; then
+    log_append "[TWGCB-01-008-0104][FAIL] telnet-server package is installed and must be removed"
+    set_flag flag_104 0
+else
+    log_append "[TWGCB-01-008-0104][PASS] telnet-server package is not installed"
+    set_flag flag_104 1
+fi
+# ======================================
+# TWGCB-01-008-0105
+# rsh伺服器套件須移除
+if rpm -q rsh-server &>/dev/null; then
+    log_append "[TWGCB-01-008-0105][FAIL] rsh-server package is installed and must be removed"
+    set_flag flag_105 0
+else
+    log_append "[TWGCB-01-008-0105][PASS] rsh-server package is not installed"
+    set_flag flag_105 1
+fi
+# ======================================
+# TWGCB-01-008-0106
+# tftp伺服器套件須移除
+if rpm -q tftp-server &>/dev/null; then
+    log_append "[TWGCB-01-008-0106][FAIL] tftp-server package is installed and must be removed"
+    set_flag flag_106 0
+else
+    log_append "[TWGCB-01-008-0106][PASS] tftp-server package is not installed"
+    set_flag flag_106 1
+fi
+# ======================================
+# TWGCB-01-008-0107
+# 更新套件後須移除舊版本元件 (clean_requirements_on_remove=True)
+cr_fail=0
+for conf in /etc/yum.conf /etc/dnf/dnf.conf; do
+    if [ -f "$conf" ]; then
+        if grep -qiE '^\s*clean_requirements_on_remove\s*=\s*[Tt]rue' "$conf"; then
+            log_append "[TWGCB-01-008-0107][PASS] clean_requirements_on_remove=True found in $conf"
+        else
+            log_append "[TWGCB-01-008-0107][FAIL] clean_requirements_on_remove=True not found in $conf"
+            cr_fail=1
+        fi
+    else
+        log_append "[TWGCB-01-008-0107][INFO] $conf does not exist, skipping"
+    fi
+done
+if [ $cr_fail -eq 0 ]; then
+    set_flag flag_107 1
+else
+    set_flag flag_107 0
+fi
+# ======================================
+# TWGCB-01-008-0108
+# IP轉送須停用 (net.ipv4.ip_forward=0, net.ipv6.conf.all.forwarding=0)
+ipfwd_fail=0
+# IPv4
+if [ "$(sysctl -n net.ipv4.ip_forward 2>/dev/null)" = "0" ]; then
+    log_append "[TWGCB-01-008-0108][PASS] sysctl runtime: net.ipv4.ip_forward=0"
+else
+    log_append "[TWGCB-01-008-0108][FAIL] sysctl runtime: net.ipv4.ip_forward is not 0"
+    ipfwd_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.ip_forward\s*=\s*0' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0108][PASS] sysctl config: net.ipv4.ip_forward=0 present"
+else
+    log_append "[TWGCB-01-008-0108][FAIL] sysctl config: net.ipv4.ip_forward=0 not found in config files"
+    ipfwd_fail=1
+fi
+# IPv6
+if [ "$(sysctl -n net.ipv6.conf.all.forwarding 2>/dev/null)" = "0" ]; then
+    log_append "[TWGCB-01-008-0108][PASS] sysctl runtime: net.ipv6.conf.all.forwarding=0"
+else
+    log_append "[TWGCB-01-008-0108][FAIL] sysctl runtime: net.ipv6.conf.all.forwarding is not 0"
+    ipfwd_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv6\.conf\.all\.forwarding\s*=\s*0' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0108][PASS] sysctl config: net.ipv6.conf.all.forwarding=0 present"
+else
+    log_append "[TWGCB-01-008-0108][FAIL] sysctl config: net.ipv6.conf.all.forwarding=0 not found in config files"
+    ipfwd_fail=1
+fi
+if [ $ipfwd_fail -eq 0 ]; then
+    set_flag flag_108 1
+else
+    set_flag flag_108 0
+fi
+# ======================================
+# TWGCB-01-008-0109
+# 所有網路介面傳送ICMP重新導向封包須停用 (net.ipv4.conf.all.send_redirects=0)
+redir_all_fail=0
+if [ "$(sysctl -n net.ipv4.conf.all.send_redirects 2>/dev/null)" = "0" ]; then
+    log_append "[TWGCB-01-008-0109][PASS] sysctl runtime: net.ipv4.conf.all.send_redirects=0"
+else
+    log_append "[TWGCB-01-008-0109][FAIL] sysctl runtime: net.ipv4.conf.all.send_redirects is not 0"
+    redir_all_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.conf\.all\.send_redirects\s*=\s*0' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0109][PASS] sysctl config: net.ipv4.conf.all.send_redirects=0 present"
+else
+    log_append "[TWGCB-01-008-0109][FAIL] sysctl config: net.ipv4.conf.all.send_redirects=0 not found in config files"
+    redir_all_fail=1
+fi
+if [ $redir_all_fail -eq 0 ]; then
+    set_flag flag_109 1
+else
+    set_flag flag_109 0
+fi
+# ======================================
+# TWGCB-01-008-0110
+# 預設網路介面傳送ICMP重新導向封包須停用 (net.ipv4.conf.default.send_redirects=0)
+redir_def_fail=0
+if [ "$(sysctl -n net.ipv4.conf.default.send_redirects 2>/dev/null)" = "0" ]; then
+    log_append "[TWGCB-01-008-0110][PASS] sysctl runtime: net.ipv4.conf.default.send_redirects=0"
+else
+    log_append "[TWGCB-01-008-0110][FAIL] sysctl runtime: net.ipv4.conf.default.send_redirects is not 0"
+    redir_def_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.conf\.default\.send_redirects\s*=\s*0' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0110][PASS] sysctl config: net.ipv4.conf.default.send_redirects=0 present"
+else
+    log_append "[TWGCB-01-008-0110][FAIL] sysctl config: net.ipv4.conf.default.send_redirects=0 not found in config files"
+    redir_def_fail=1
+fi
+if [ $redir_def_fail -eq 0 ]; then
+    set_flag flag_110 1
+else
+    set_flag flag_110 0
+fi
+
+# ======================================
+# TWGCB-01-008-0111
+# 所有網路介面不接受來源路由封包 (net.ipv4/ipv6.conf.all.accept_source_route=0)
+src_rt_all_fail=0
+for key in net.ipv4.conf.all.accept_source_route net.ipv6.conf.all.accept_source_route; do
+    if [ "$(sysctl -n $key 2>/dev/null)" = "0" ]; then
+        log_append "[TWGCB-01-008-0111][PASS] sysctl runtime: $key=0"
+    else
+        log_append "[TWGCB-01-008-0111][FAIL] sysctl runtime: $key is not 0"
+        src_rt_all_fail=1
+    fi
+    kesc=$(echo "$key" | sed 's/\./\\./g')
+    if grep -RqsE "^\s*${kesc}\s*=\s*0" /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+        log_append "[TWGCB-01-008-0111][PASS] sysctl config: $key=0 present"
+    else
+        log_append "[TWGCB-01-008-0111][FAIL] sysctl config: $key=0 not found in config files"
+        src_rt_all_fail=1
+    fi
+done
+if [ $src_rt_all_fail -eq 0 ]; then set_flag flag_111 1; else set_flag flag_111 0; fi
+# ======================================
+# TWGCB-01-008-0112
+# 預設網路介面不接受來源路由封包 (net.ipv4/ipv6.conf.default.accept_source_route=0)
+src_rt_def_fail=0
+for key in net.ipv4.conf.default.accept_source_route net.ipv6.conf.default.accept_source_route; do
+    if [ "$(sysctl -n $key 2>/dev/null)" = "0" ]; then
+        log_append "[TWGCB-01-008-0112][PASS] sysctl runtime: $key=0"
+    else
+        log_append "[TWGCB-01-008-0112][FAIL] sysctl runtime: $key is not 0"
+        src_rt_def_fail=1
+    fi
+    kesc=$(echo "$key" | sed 's/\./\\./g')
+    if grep -RqsE "^\s*${kesc}\s*=\s*0" /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+        log_append "[TWGCB-01-008-0112][PASS] sysctl config: $key=0 present"
+    else
+        log_append "[TWGCB-01-008-0112][FAIL] sysctl config: $key=0 not found in config files"
+        src_rt_def_fail=1
+    fi
+done
+if [ $src_rt_def_fail -eq 0 ]; then set_flag flag_112 1; else set_flag flag_112 0; fi
+# ======================================
+# TWGCB-01-008-0113
+# 所有網路介面不接受ICMP重新導向封包 (net.ipv4/ipv6.conf.all.accept_redirects=0)
+acc_redir_all_fail=0
+for key in net.ipv4.conf.all.accept_redirects net.ipv6.conf.all.accept_redirects; do
+    if [ "$(sysctl -n $key 2>/dev/null)" = "0" ]; then
+        log_append "[TWGCB-01-008-0113][PASS] sysctl runtime: $key=0"
+    else
+        log_append "[TWGCB-01-008-0113][FAIL] sysctl runtime: $key is not 0"
+        acc_redir_all_fail=1
+    fi
+    kesc=$(echo "$key" | sed 's/\./\\./g')
+    if grep -RqsE "^\s*${kesc}\s*=\s*0" /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+        log_append "[TWGCB-01-008-0113][PASS] sysctl config: $key=0 present"
+    else
+        log_append "[TWGCB-01-008-0113][FAIL] sysctl config: $key=0 not found in config files"
+        acc_redir_all_fail=1
+    fi
+done
+if [ $acc_redir_all_fail -eq 0 ]; then set_flag flag_113 1; else set_flag flag_113 0; fi
+# ======================================
+# TWGCB-01-008-0114
+# 預設網路介面不接受ICMP重新導向封包 (net.ipv4/ipv6.conf.default.accept_redirects=0)
+acc_redir_def_fail=0
+for key in net.ipv4.conf.default.accept_redirects net.ipv6.conf.default.accept_redirects; do
+    if [ "$(sysctl -n $key 2>/dev/null)" = "0" ]; then
+        log_append "[TWGCB-01-008-0114][PASS] sysctl runtime: $key=0"
+    else
+        log_append "[TWGCB-01-008-0114][FAIL] sysctl runtime: $key is not 0"
+        acc_redir_def_fail=1
+    fi
+    kesc=$(echo "$key" | sed 's/\./\\./g')
+    if grep -RqsE "^\s*${kesc}\s*=\s*0" /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+        log_append "[TWGCB-01-008-0114][PASS] sysctl config: $key=0 present"
+    else
+        log_append "[TWGCB-01-008-0114][FAIL] sysctl config: $key=0 not found in config files"
+        acc_redir_def_fail=1
+    fi
+done
+if [ $acc_redir_def_fail -eq 0 ]; then set_flag flag_114 1; else set_flag flag_114 0; fi
+# ======================================
+# TWGCB-01-008-0115
+# 所有網路介面不接受安全ICMP重新導向封包 (net.ipv4.conf.all.secure_redirects=0)
+sec_redir_all_fail=0
+if [ "$(sysctl -n net.ipv4.conf.all.secure_redirects 2>/dev/null)" = "0" ]; then
+    log_append "[TWGCB-01-008-0115][PASS] sysctl runtime: net.ipv4.conf.all.secure_redirects=0"
+else
+    log_append "[TWGCB-01-008-0115][FAIL] sysctl runtime: net.ipv4.conf.all.secure_redirects is not 0"
+    sec_redir_all_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.conf\.all\.secure_redirects\s*=\s*0' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0115][PASS] sysctl config: net.ipv4.conf.all.secure_redirects=0 present"
+else
+    log_append "[TWGCB-01-008-0115][FAIL] sysctl config: net.ipv4.conf.all.secure_redirects=0 not found in config files"
+    sec_redir_all_fail=1
+fi
+if [ $sec_redir_all_fail -eq 0 ]; then set_flag flag_115 1; else set_flag flag_115 0; fi
+# ======================================
+# TWGCB-01-008-0116
+# 預設網路介面不接受安全ICMP重新導向封包 (net.ipv4.conf.default.secure_redirects=0)
+sec_redir_def_fail=0
+if [ "$(sysctl -n net.ipv4.conf.default.secure_redirects 2>/dev/null)" = "0" ]; then
+    log_append "[TWGCB-01-008-0116][PASS] sysctl runtime: net.ipv4.conf.default.secure_redirects=0"
+else
+    log_append "[TWGCB-01-008-0116][FAIL] sysctl runtime: net.ipv4.conf.default.secure_redirects is not 0"
+    sec_redir_def_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.conf\.default\.secure_redirects\s*=\s*0' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0116][PASS] sysctl config: net.ipv4.conf.default.secure_redirects=0 present"
+else
+    log_append "[TWGCB-01-008-0116][FAIL] sysctl config: net.ipv4.conf.default.secure_redirects=0 not found in config files"
+    sec_redir_def_fail=1
+fi
+if [ $sec_redir_def_fail -eq 0 ]; then set_flag flag_116 1; else set_flag flag_116 0; fi
+# ======================================
+# TWGCB-01-008-0117
+# 所有網路介面須記錄可疑封包 (net.ipv4.conf.all.log_martians=1)
+log_mart_all_fail=0
+if [ "$(sysctl -n net.ipv4.conf.all.log_martians 2>/dev/null)" = "1" ]; then
+    log_append "[TWGCB-01-008-0117][PASS] sysctl runtime: net.ipv4.conf.all.log_martians=1"
+else
+    log_append "[TWGCB-01-008-0117][FAIL] sysctl runtime: net.ipv4.conf.all.log_martians is not 1"
+    log_mart_all_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.conf\.all\.log_martians\s*=\s*1' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0117][PASS] sysctl config: net.ipv4.conf.all.log_martians=1 present"
+else
+    log_append "[TWGCB-01-008-0117][FAIL] sysctl config: net.ipv4.conf.all.log_martians=1 not found in config files"
+    log_mart_all_fail=1
+fi
+if [ $log_mart_all_fail -eq 0 ]; then set_flag flag_117 1; else set_flag flag_117 0; fi
+# ======================================
+# TWGCB-01-008-0118
+# 預設網路介面須記錄可疑封包 (net.ipv4.conf.default.log_martians=1)
+log_mart_def_fail=0
+if [ "$(sysctl -n net.ipv4.conf.default.log_martians 2>/dev/null)" = "1" ]; then
+    log_append "[TWGCB-01-008-0118][PASS] sysctl runtime: net.ipv4.conf.default.log_martians=1"
+else
+    log_append "[TWGCB-01-008-0118][FAIL] sysctl runtime: net.ipv4.conf.default.log_martians is not 1"
+    log_mart_def_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.conf\.default\.log_martians\s*=\s*1' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0118][PASS] sysctl config: net.ipv4.conf.default.log_martians=1 present"
+else
+    log_append "[TWGCB-01-008-0118][FAIL] sysctl config: net.ipv4.conf.default.log_martians=1 not found in config files"
+    log_mart_def_fail=1
+fi
+if [ $log_mart_def_fail -eq 0 ]; then set_flag flag_118 1; else set_flag flag_118 0; fi
+# ======================================
+# TWGCB-01-008-0119
+# 不回應ICMP廣播要求 (net.ipv4.icmp_echo_ignore_broadcasts=1)
+icmp_bc_fail=0
+if [ "$(sysctl -n net.ipv4.icmp_echo_ignore_broadcasts 2>/dev/null)" = "1" ]; then
+    log_append "[TWGCB-01-008-0119][PASS] sysctl runtime: net.ipv4.icmp_echo_ignore_broadcasts=1"
+else
+    log_append "[TWGCB-01-008-0119][FAIL] sysctl runtime: net.ipv4.icmp_echo_ignore_broadcasts is not 1"
+    icmp_bc_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.icmp_echo_ignore_broadcasts\s*=\s*1' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0119][PASS] sysctl config: net.ipv4.icmp_echo_ignore_broadcasts=1 present"
+else
+    log_append "[TWGCB-01-008-0119][FAIL] sysctl config: net.ipv4.icmp_echo_ignore_broadcasts=1 not found in config files"
+    icmp_bc_fail=1
+fi
+if [ $icmp_bc_fail -eq 0 ]; then set_flag flag_119 1; else set_flag flag_119 0; fi
+# ======================================
+# TWGCB-01-008-0120
+# 忽略偽造之ICMP錯誤訊息 (net.ipv4.icmp_ignore_bogus_error_responses=1)
+icmp_bogus_fail=0
+if [ "$(sysctl -n net.ipv4.icmp_ignore_bogus_error_responses 2>/dev/null)" = "1" ]; then
+    log_append "[TWGCB-01-008-0120][PASS] sysctl runtime: net.ipv4.icmp_ignore_bogus_error_responses=1"
+else
+    log_append "[TWGCB-01-008-0120][FAIL] sysctl runtime: net.ipv4.icmp_ignore_bogus_error_responses is not 1"
+    icmp_bogus_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.icmp_ignore_bogus_error_responses\s*=\s*1' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0120][PASS] sysctl config: net.ipv4.icmp_ignore_bogus_error_responses=1 present"
+else
+    log_append "[TWGCB-01-008-0120][FAIL] sysctl config: net.ipv4.icmp_ignore_bogus_error_responses=1 not found in config files"
+    icmp_bogus_fail=1
+fi
+if [ $icmp_bogus_fail -eq 0 ]; then set_flag flag_120 1; else set_flag flag_120 0; fi
+
+# ======================================
+# TWGCB-01-008-0121
+# 所有網路介面須啟用逆向路徑過濾 (net.ipv4.conf.all.rp_filter=1)
+rp_all_fail=0
+if [ "$(sysctl -n net.ipv4.conf.all.rp_filter 2>/dev/null)" = "1" ]; then
+    log_append "[TWGCB-01-008-0121][PASS] sysctl runtime: net.ipv4.conf.all.rp_filter=1"
+else
+    log_append "[TWGCB-01-008-0121][FAIL] sysctl runtime: net.ipv4.conf.all.rp_filter is not 1"
+    rp_all_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.conf\.all\.rp_filter\s*=\s*1' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0121][PASS] sysctl config: net.ipv4.conf.all.rp_filter=1 present"
+else
+    log_append "[TWGCB-01-008-0121][FAIL] sysctl config: net.ipv4.conf.all.rp_filter=1 not found in config files"
+    rp_all_fail=1
+fi
+if [ $rp_all_fail -eq 0 ]; then set_flag flag_121 1; else set_flag flag_121 0; fi
+# ======================================
+# TWGCB-01-008-0122
+# 預設網路介面須啟用逆向路徑過濾 (net.ipv4.conf.default.rp_filter=1)
+rp_def_fail=0
+if [ "$(sysctl -n net.ipv4.conf.default.rp_filter 2>/dev/null)" = "1" ]; then
+    log_append "[TWGCB-01-008-0122][PASS] sysctl runtime: net.ipv4.conf.default.rp_filter=1"
+else
+    log_append "[TWGCB-01-008-0122][FAIL] sysctl runtime: net.ipv4.conf.default.rp_filter is not 1"
+    rp_def_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.conf\.default\.rp_filter\s*=\s*1' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0122][PASS] sysctl config: net.ipv4.conf.default.rp_filter=1 present"
+else
+    log_append "[TWGCB-01-008-0122][FAIL] sysctl config: net.ipv4.conf.default.rp_filter=1 not found in config files"
+    rp_def_fail=1
+fi
+if [ $rp_def_fail -eq 0 ]; then set_flag flag_122 1; else set_flag flag_122 0; fi
+# ======================================
+# TWGCB-01-008-0123
+# TCP SYN cookies須啟用 (net.ipv4.tcp_syncookies=1)
+syncook_fail=0
+if [ "$(sysctl -n net.ipv4.tcp_syncookies 2>/dev/null)" = "1" ]; then
+    log_append "[TWGCB-01-008-0123][PASS] sysctl runtime: net.ipv4.tcp_syncookies=1"
+else
+    log_append "[TWGCB-01-008-0123][FAIL] sysctl runtime: net.ipv4.tcp_syncookies is not 1"
+    syncook_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv4\.tcp_syncookies\s*=\s*1' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0123][PASS] sysctl config: net.ipv4.tcp_syncookies=1 present"
+else
+    log_append "[TWGCB-01-008-0123][FAIL] sysctl config: net.ipv4.tcp_syncookies=1 not found in config files"
+    syncook_fail=1
+fi
+if [ $syncook_fail -eq 0 ]; then set_flag flag_123 1; else set_flag flag_123 0; fi
+# ======================================
+# TWGCB-01-008-0124
+# 所有網路介面不接受IPv6路由器公告 (net.ipv6.conf.all.accept_ra=0)
+ra_all_fail=0
+if [ "$(sysctl -n net.ipv6.conf.all.accept_ra 2>/dev/null)" = "0" ]; then
+    log_append "[TWGCB-01-008-0124][PASS] sysctl runtime: net.ipv6.conf.all.accept_ra=0"
+else
+    log_append "[TWGCB-01-008-0124][FAIL] sysctl runtime: net.ipv6.conf.all.accept_ra is not 0"
+    ra_all_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv6\.conf\.all\.accept_ra\s*=\s*0' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0124][PASS] sysctl config: net.ipv6.conf.all.accept_ra=0 present"
+else
+    log_append "[TWGCB-01-008-0124][FAIL] sysctl config: net.ipv6.conf.all.accept_ra=0 not found in config files"
+    ra_all_fail=1
+fi
+if [ $ra_all_fail -eq 0 ]; then set_flag flag_124 1; else set_flag flag_124 0; fi
+# ======================================
+# TWGCB-01-008-0125
+# 預設網路介面不接受IPv6路由器公告 (net.ipv6.conf.default.accept_ra=0)
+ra_def_fail=0
+if [ "$(sysctl -n net.ipv6.conf.default.accept_ra 2>/dev/null)" = "0" ]; then
+    log_append "[TWGCB-01-008-0125][PASS] sysctl runtime: net.ipv6.conf.default.accept_ra=0"
+else
+    log_append "[TWGCB-01-008-0125][FAIL] sysctl runtime: net.ipv6.conf.default.accept_ra is not 0"
+    ra_def_fail=1
+fi
+if grep -RqsE '^\s*net\.ipv6\.conf\.default\.accept_ra\s*=\s*0' /etc/sysctl.conf /etc/sysctl.d 2>/dev/null; then
+    log_append "[TWGCB-01-008-0125][PASS] sysctl config: net.ipv6.conf.default.accept_ra=0 present"
+else
+    log_append "[TWGCB-01-008-0125][FAIL] sysctl config: net.ipv6.conf.default.accept_ra=0 not found in config files"
+    ra_def_fail=1
+fi
+if [ $ra_def_fail -eq 0 ]; then set_flag flag_125 1; else set_flag flag_125 0; fi
+# ======================================
+# TWGCB-01-008-0126
+# DCCP協定須停用
+if ! modinfo dccp &>/dev/null && ! lsmod | grep -q "^dccp"; then
+    log_append "[TWGCB-01-008-0126][PASS] dccp module not available in kernel"
+    set_flag flag_126 1
+elif grep -q "^install dccp /bin/true" /etc/modprobe.d/dccp.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0126][PASS] dccp is disabled via modprobe"
+    set_flag flag_126 1
+else
+    log_append "[TWGCB-01-008-0126][FAIL] dccp module is available but not disabled"
+    set_flag flag_126 0
+fi
+# ======================================
+# TWGCB-01-008-0127
+# SCTP協定須停用
+if ! modinfo sctp &>/dev/null && ! lsmod | grep -q "^sctp"; then
+    log_append "[TWGCB-01-008-0127][PASS] sctp module not available in kernel"
+    set_flag flag_127 1
+elif grep -q "^install sctp /bin/true" /etc/modprobe.d/sctp.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0127][PASS] sctp is disabled via modprobe"
+    set_flag flag_127 1
+else
+    log_append "[TWGCB-01-008-0127][FAIL] sctp module is available but not disabled"
+    set_flag flag_127 0
+fi
+# ======================================
+# TWGCB-01-008-0128
+# RDS協定須停用
+if ! modinfo rds &>/dev/null && ! lsmod | grep -q "^rds"; then
+    log_append "[TWGCB-01-008-0128][PASS] rds module not available in kernel"
+    set_flag flag_128 1
+elif grep -q "^install rds /bin/true" /etc/modprobe.d/rds.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0128][PASS] rds is disabled via modprobe"
+    set_flag flag_128 1
+else
+    log_append "[TWGCB-01-008-0128][FAIL] rds module is available but not disabled"
+    set_flag flag_128 0
+fi
+# ======================================
+# TWGCB-01-008-0129
+# TIPC協定須停用
+if ! modinfo tipc &>/dev/null && ! lsmod | grep -q "^tipc"; then
+    log_append "[TWGCB-01-008-0129][PASS] tipc module not available in kernel"
+    set_flag flag_129 1
+elif grep -q "^install tipc /bin/true" /etc/modprobe.d/tipc.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0129][PASS] tipc is disabled via modprobe"
+    set_flag flag_129 1
+else
+    log_append "[TWGCB-01-008-0129][FAIL] tipc module is available but not disabled"
+    set_flag flag_129 0
+fi
+# ======================================
+# TWGCB-01-008-0130
+# 無線網路介面須停用
+wireless_dirs=$(find /sys/class/net/*/wireless -type d 2>/dev/null)
+if [ -z "$wireless_dirs" ]; then
+    log_append "[TWGCB-01-008-0130][PASS] No wireless network interfaces found"
+    set_flag flag_130 1
+else
+    # 有無線介面，檢查是否已停用
+    if command -v nmcli &>/dev/null; then
+        wifi_status=$(nmcli radio wifi 2>/dev/null)
+        if echo "$wifi_status" | grep -qi "disabled"; then
+            log_append "[TWGCB-01-008-0130][PASS] Wireless interfaces are disabled (nmcli radio wifi: $wifi_status)"
+            set_flag flag_130 1
+        else
+            log_append "[TWGCB-01-008-0130][FAIL] Wireless interfaces exist and are not disabled (nmcli radio wifi: $wifi_status)"
+            set_flag flag_130 0
+        fi
+    else
+        log_append "[TWGCB-01-008-0130][FAIL] Wireless interfaces exist; nmcli not available to verify status"
+        set_flag flag_130 0
+    fi
+fi
+
+# ======================================
+# TWGCB-01-008-0131
+# 網路介面不得開啟混雜模式
+promisc_ifaces=$(ip link 2>/dev/null | grep -i promisc | awk -F': ' '{print $2}')
+if [ -z "$promisc_ifaces" ]; then
+    log_append "[TWGCB-01-008-0131][PASS] No network interfaces in promiscuous mode"
+    set_flag flag_131 1
+else
+    log_append "[TWGCB-01-008-0131][FAIL] Network interfaces in promiscuous mode: $promisc_ifaces"
+    set_flag flag_131 0
+fi
+# ======================================
+# TWGCB-01-008-0132
+# auditd套件須安裝 (audit, audit-libs)
+audit_pkg_fail=0
+for pkg in audit audit-libs; do
+    if rpm -q "$pkg" &>/dev/null; then
+        log_append "[TWGCB-01-008-0132][PASS] $pkg package is installed"
+    else
+        log_append "[TWGCB-01-008-0132][FAIL] $pkg package is NOT installed"
+        audit_pkg_fail=1
+    fi
+done
+if [ $audit_pkg_fail -eq 0 ]; then set_flag flag_132 1; else set_flag flag_132 0; fi
+# ======================================
+# TWGCB-01-008-0133
+# auditd服務須啟用
+if systemctl is-enabled auditd > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0133][PASS] auditd service is enabled"
+    set_flag flag_133 1
+else
+    log_append "[TWGCB-01-008-0133][FAIL] auditd service is not enabled"
+    set_flag flag_133 0
+fi
+# ======================================
+# TWGCB-01-008-0134
+# 稽核auditd啟動前之程序 (audit=1 in GRUB_CMDLINE_LINUX)
+grub134_fail=0
+if grep -qE 'audit=1' /proc/cmdline 2>/dev/null; then
+    log_append "[TWGCB-01-008-0134][PASS] audit=1 present in current kernel cmdline"
+else
+    log_append "[TWGCB-01-008-0134][FAIL] audit=1 not found in current kernel cmdline"
+    grub134_fail=1
+fi
+if grep -qE 'GRUB_CMDLINE_LINUX.*audit=1' /etc/default/grub 2>/dev/null; then
+    log_append "[TWGCB-01-008-0134][PASS] audit=1 present in /etc/default/grub"
+else
+    log_append "[TWGCB-01-008-0134][FAIL] audit=1 not found in /etc/default/grub"
+    grub134_fail=1
+fi
+if [ $grub134_fail -eq 0 ]; then set_flag flag_134 1; else set_flag flag_134 0; fi
+# ======================================
+# TWGCB-01-008-0135
+# 稽核待辦事項數量限制 (audit_backlog_limit>=8192 in GRUB_CMDLINE_LINUX)
+grub135_fail=0
+backlog_curr=$(grep -oP 'audit_backlog_limit=\K[0-9]+' /proc/cmdline 2>/dev/null)
+if [ -n "$backlog_curr" ] && [ "$backlog_curr" -ge 8192 ]; then
+    log_append "[TWGCB-01-008-0135][PASS] audit_backlog_limit=$backlog_curr in current kernel cmdline (>=8192)"
+else
+    log_append "[TWGCB-01-008-0135][FAIL] audit_backlog_limit not set or < 8192 in current kernel cmdline (value: ${backlog_curr:-not set})"
+    grub135_fail=1
+fi
+backlog_grub=$(grep -oP 'audit_backlog_limit=\K[0-9]+' /etc/default/grub 2>/dev/null)
+if [ -n "$backlog_grub" ] && [ "$backlog_grub" -ge 8192 ]; then
+    log_append "[TWGCB-01-008-0135][PASS] audit_backlog_limit=$backlog_grub in /etc/default/grub (>=8192)"
+else
+    log_append "[TWGCB-01-008-0135][FAIL] audit_backlog_limit not set or < 8192 in /etc/default/grub (value: ${backlog_grub:-not set})"
+    grub135_fail=1
+fi
+if [ $grub135_fail -eq 0 ]; then set_flag flag_135 1; else set_flag flag_135 0; fi
+# ======================================
+# TWGCB-01-008-0136
+# 稽核處理失敗時通知系統管理者 (postmaster: root in /etc/aliases)
+if grep -qsE '^\s*postmaster\s*:\s*root' /etc/aliases 2>/dev/null; then
+    log_append "[TWGCB-01-008-0136][PASS] postmaster: root found in /etc/aliases"
+    set_flag flag_136 1
+else
+    log_append "[TWGCB-01-008-0136][FAIL] postmaster: root not found in /etc/aliases"
+    set_flag flag_136 0
+fi
+# ======================================
+# TWGCB-01-008-0137 / 0138 / 0139 / 0140
+# 稽核日誌檔案及目錄之所有權與權限
+audit_log_file=$(awk -F'[= \t]+' '/^\s*log_file\s*=/{print $2}' /etc/audit/auditd.conf 2>/dev/null)
+audit_log_file="${audit_log_file:-/var/log/audit/audit.log}"
+audit_log_dir=$(dirname "$audit_log_file")
+# 0137 - 稽核日誌檔案所有權須為root:root
+if [ -f "$audit_log_file" ]; then
+    owner137=$(stat -c "%U:%G" "$audit_log_file")
+    if [ "$owner137" = "root:root" ]; then
+        log_append "[TWGCB-01-008-0137][PASS] audit log file $audit_log_file is owned by root:root"
+        set_flag flag_137 1
+    else
+        log_append "[TWGCB-01-008-0137][FAIL] audit log file $audit_log_file is owned by $owner137 (expected root:root)"
+        set_flag flag_137 0
+    fi
+else
+    log_append "[TWGCB-01-008-0137][SKIP] audit log file $audit_log_file does not exist"
+    set_flag flag_137 2
+fi
+# 0138 - 稽核日誌檔案權限須為600或更低
+if [ -f "$audit_log_file" ]; then
+    perm138=$(stat -c "%a" "$audit_log_file")
+    if [ $(( 8#${perm138: -3} & 8#177 )) -eq 0 ]; then
+        log_append "[TWGCB-01-008-0138][PASS] audit log file $audit_log_file has permission $perm138 (<=600)"
+        set_flag flag_138 1
+    else
+        log_append "[TWGCB-01-008-0138][FAIL] audit log file $audit_log_file has permission $perm138 (expected 600 or more restrictive)"
+        set_flag flag_138 0
+    fi
+else
+    log_append "[TWGCB-01-008-0138][SKIP] audit log file $audit_log_file does not exist"
+    set_flag flag_138 2
+fi
+# 0139 - 稽核日誌目錄所有權須為root:root
+if [ -d "$audit_log_dir" ]; then
+    owner139=$(stat -c "%U:%G" "$audit_log_dir")
+    if [ "$owner139" = "root:root" ]; then
+        log_append "[TWGCB-01-008-0139][PASS] audit log directory $audit_log_dir is owned by root:root"
+        set_flag flag_139 1
+    else
+        log_append "[TWGCB-01-008-0139][FAIL] audit log directory $audit_log_dir is owned by $owner139 (expected root:root)"
+        set_flag flag_139 0
+    fi
+else
+    log_append "[TWGCB-01-008-0139][SKIP] audit log directory $audit_log_dir does not exist"
+    set_flag flag_139 2
+fi
+# 0140 - 稽核日誌目錄權限須為700或更低
+if [ -d "$audit_log_dir" ]; then
+    perm140=$(stat -c "%a" "$audit_log_dir")
+    if [ $(( 8#${perm140: -3} & 8#077 )) -eq 0 ]; then
+        log_append "[TWGCB-01-008-0140][PASS] audit log directory $audit_log_dir has permission $perm140 (<=700)"
+        set_flag flag_140 1
+    else
+        log_append "[TWGCB-01-008-0140][FAIL] audit log directory $audit_log_dir has permission $perm140 (expected 700 or more restrictive)"
+        set_flag flag_140 0
+    fi
+else
+    log_append "[TWGCB-01-008-0140][SKIP] audit log directory $audit_log_dir does not exist"
+    set_flag flag_140 2
+fi
+
+# ======================================
+# TWGCB-01-008-0141
+# 稽核規則檔案權限須為600或更低
+audit_rules_file="/etc/audit/rules.d/audit.rules"
+if [ -f "$audit_rules_file" ]; then
+    perm141=$(stat -c "%a" "$audit_rules_file")
+    if [ $(( 8#${perm141: -3} & ~8#600 & 8#777 )) -eq 0 ]; then
+        log_append "[TWGCB-01-008-0141][PASS] $audit_rules_file has permission $perm141 (<=600)"
+        set_flag flag_141 1
+    else
+        log_append "[TWGCB-01-008-0141][FAIL] $audit_rules_file has permission $perm141 (expected 600 or more restrictive)"
+        set_flag flag_141 0
+    fi
+else
+    log_append "[TWGCB-01-008-0141][SKIP] $audit_rules_file does not exist"
+    set_flag flag_141 2
+fi
+# ======================================
+# TWGCB-01-008-0142
+# 稽核設定檔案權限須為640或更低
+if [ -f /etc/audit/auditd.conf ]; then
+    perm142=$(stat -c "%a" /etc/audit/auditd.conf)
+    if [ $(( 8#${perm142: -3} & ~8#640 & 8#777 )) -eq 0 ]; then
+        log_append "[TWGCB-01-008-0142][PASS] /etc/audit/auditd.conf has permission $perm142 (<=640)"
+        set_flag flag_142 1
+    else
+        log_append "[TWGCB-01-008-0142][FAIL] /etc/audit/auditd.conf has permission $perm142 (expected 640 or more restrictive)"
+        set_flag flag_142 0
+    fi
+else
+    log_append "[TWGCB-01-008-0142][SKIP] /etc/audit/auditd.conf does not exist"
+    set_flag flag_142 2
+fi
+# ======================================
+# TWGCB-01-008-0143 / 0144
+# 稽核工具權限須為750或更低，所有權須為root:root
+audit_tools="/sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/audisp-remote /sbin/audisp-syslog /sbin/augenrules /sbin/rsyslogd"
+tool_perm_fail=0
+tool_owner_fail=0
+for tool in $audit_tools; do
+    [ ! -f "$tool" ] && continue
+    perm=$(stat -c "%a" "$tool")
+    if [ $(( 8#${perm: -3} & ~8#750 & 8#777 )) -ne 0 ]; then
+        log_append "[TWGCB-01-008-0143][FAIL] $tool has permission $perm (expected 750 or more restrictive)"
+        tool_perm_fail=1
+    fi
+    owner=$(stat -c "%U:%G" "$tool")
+    if [ "$owner" != "root:root" ]; then
+        log_append "[TWGCB-01-008-0144][FAIL] $tool is owned by $owner (expected root:root)"
+        tool_owner_fail=1
+    fi
+done
+if [ $tool_perm_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0143][PASS] All audit tools have permissions of 750 or more restrictive"
+    set_flag flag_143 1
+else
+    set_flag flag_143 0
+fi
+if [ $tool_owner_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0144][PASS] All audit tools are owned by root:root"
+    set_flag flag_144 1
+else
+    set_flag flag_144 0
+fi
+# ======================================
+# TWGCB-01-008-0145
+# AIDE須設定監控稽核工具完整性
+if ! rpm -q aide &>/dev/null; then
+    log_append "[TWGCB-01-008-0145][SKIP] AIDE is not installed, cannot verify audit tool integrity monitoring"
+    set_flag flag_145 2
+elif [ ! -f /etc/aide.conf ]; then
+    log_append "[TWGCB-01-008-0145][FAIL] /etc/aide.conf not found"
+    set_flag flag_145 0
+else
+    if grep -q '/usr/sbin/auditctl' /etc/aide.conf 2>/dev/null; then
+        log_append "[TWGCB-01-008-0145][PASS] AIDE is configured to monitor audit tools"
+        set_flag flag_145 1
+    else
+        log_append "[TWGCB-01-008-0145][FAIL] AIDE is not configured to monitor audit tools in /etc/aide.conf"
+        set_flag flag_145 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0146
+# 稽核日誌檔案大小上限須為32MB以上
+if [ -f /etc/audit/auditd.conf ]; then
+    max_log=$(awk -F'[= \t]+' '/^\s*max_log_file\s*=/{print $2}' /etc/audit/auditd.conf 2>/dev/null | tr -d ' ')
+    if [ -n "$max_log" ] && [ "$max_log" -ge 32 ] 2>/dev/null; then
+        log_append "[TWGCB-01-008-0146][PASS] max_log_file=$max_log in auditd.conf (>=32)"
+        set_flag flag_146 1
+    else
+        log_append "[TWGCB-01-008-0146][FAIL] max_log_file=${max_log:-not set} in auditd.conf (expected >=32)"
+        set_flag flag_146 0
+    fi
+else
+    log_append "[TWGCB-01-008-0146][SKIP] /etc/audit/auditd.conf not found"
+    set_flag flag_146 2
+fi
+# ======================================
+# TWGCB-01-008-0147
+# 稽核日誌達到上限之行為須設為keep_logs
+if [ -f /etc/audit/auditd.conf ]; then
+    log_action=$(awk -F'[= \t]+' '/^\s*max_log_file_action\s*=/{print $2}' /etc/audit/auditd.conf 2>/dev/null | tr -d ' ')
+    if [ "$log_action" = "keep_logs" ]; then
+        log_append "[TWGCB-01-008-0147][PASS] max_log_file_action=keep_logs in auditd.conf"
+        set_flag flag_147 1
+    else
+        log_append "[TWGCB-01-008-0147][FAIL] max_log_file_action=${log_action:-not set} in auditd.conf (expected keep_logs)"
+        set_flag flag_147 0
+    fi
+else
+    log_append "[TWGCB-01-008-0147][SKIP] /etc/audit/auditd.conf not found"
+    set_flag flag_147 2
+fi
+# ======================================
+# TWGCB-01-008-0148
+# 稽核規則：記錄系統管理者活動 (-w /etc/sudoers -p wa -k scope)
+scope_fail=0
+for rule in "-w /etc/sudoers -p wa -k scope" "-w /etc/sudoers.d/ -p wa -k scope"; do
+    path=$(echo "$rule" | awk '{print $2}')
+    key=$(echo "$rule" | awk '{print $6}')
+    if auditctl -l 2>/dev/null | grep -qF "$path" || \
+       grep -rqsF "$path" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0148][PASS] audit rule present: $rule"
+    else
+        log_append "[TWGCB-01-008-0148][FAIL] audit rule missing: $rule"
+        scope_fail=1
+    fi
+done
+if [ $scope_fail -eq 0 ]; then set_flag flag_148 1; else set_flag flag_148 0; fi
+# ======================================
+# TWGCB-01-008-0149
+# 稽核規則：記錄變更登入與登出資訊事件
+login_fail=0
+for path in /var/run/faillock/ /var/log/lastlog; do
+    if auditctl -l 2>/dev/null | grep -qF "$path" || \
+       grep -rqsF "$path" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0149][PASS] audit rule present for: $path"
+    else
+        log_append "[TWGCB-01-008-0149][FAIL] audit rule missing for: $path"
+        login_fail=1
+    fi
+done
+if [ $login_fail -eq 0 ]; then set_flag flag_149 1; else set_flag flag_149 0; fi
+# ======================================
+# TWGCB-01-008-0150
+# 稽核規則：記錄會談啟始資訊
+session_fail=0
+for path in /var/run/utmp /var/log/wtmp /var/log/btmp; do
+    if auditctl -l 2>/dev/null | grep -qF "$path" || \
+       grep -rqsF "$path" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0150][PASS] audit rule present for: $path"
+    else
+        log_append "[TWGCB-01-008-0150][FAIL] audit rule missing for: $path"
+        session_fail=1
+    fi
+done
+if [ $session_fail -eq 0 ]; then set_flag flag_150 1; else set_flag flag_150 0; fi
+# ======================================
+# TWGCB-01-008-0151
+# 稽核規則：記錄系統時間修改事件
+time_fail=0
+for key in "adjtimex" "settimeofday" "clock_settime"; do
+    if auditctl -l 2>/dev/null | grep -qF "$key" || \
+       grep -rqsF "$key" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0151][PASS] audit rule present for syscall: $key"
+    else
+        log_append "[TWGCB-01-008-0151][FAIL] audit rule missing for syscall: $key"
+        time_fail=1
+    fi
+done
+if auditctl -l 2>/dev/null | grep -qF "/etc/localtime" || \
+   grep -rqsF "/etc/localtime" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0151][PASS] audit rule present for: /etc/localtime"
+else
+    log_append "[TWGCB-01-008-0151][FAIL] audit rule missing for: /etc/localtime"
+    time_fail=1
+fi
+if [ $time_fail -eq 0 ]; then set_flag flag_151 1; else set_flag flag_151 0; fi
+# ======================================
+# TWGCB-01-008-0152
+# 稽核規則：記錄強制存取控制設定變更
+mac_fail=0
+for path in /etc/selinux/ /usr/share/selinux/; do
+    if auditctl -l 2>/dev/null | grep -qF "$path" || \
+       grep -rqsF "$path" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0152][PASS] audit rule present for: $path"
+    else
+        log_append "[TWGCB-01-008-0152][FAIL] audit rule missing for: $path"
+        mac_fail=1
+    fi
+done
+if [ $mac_fail -eq 0 ]; then set_flag flag_152 1; else set_flag flag_152 0; fi
+# ======================================
+# TWGCB-01-008-0153
+# 稽核規則：記錄系統區域資訊變更
+locale_fail=0
+for key in "sethostname" "setdomainname"; do
+    if auditctl -l 2>/dev/null | grep -qF "$key" || \
+       grep -rqsF "$key" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0153][PASS] audit rule present for syscall: $key"
+    else
+        log_append "[TWGCB-01-008-0153][FAIL] audit rule missing for syscall: $key"
+        locale_fail=1
+    fi
+done
+for path in /etc/issue /etc/issue.net /etc/hosts /etc/sysconfig/network-scripts/; do
+    if auditctl -l 2>/dev/null | grep -qF "$path" || \
+       grep -rqsF "$path" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0153][PASS] audit rule present for: $path"
+    else
+        log_append "[TWGCB-01-008-0153][FAIL] audit rule missing for: $path"
+        locale_fail=1
+    fi
+done
+if [ $locale_fail -eq 0 ]; then set_flag flag_153 1; else set_flag flag_153 0; fi
+# ======================================
+# TWGCB-01-008-0154
+# 稽核規則：記錄自主存取控制權限修改
+perm_mod_fail=0
+for key in "chmod" "fchmod" "chown" "fchown" "setxattr" "removexattr"; do
+    if auditctl -l 2>/dev/null | grep -qF "$key" || \
+       grep -rqsF "$key" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0154][PASS] audit rule present for syscall: $key"
+    else
+        log_append "[TWGCB-01-008-0154][FAIL] audit rule missing for syscall: $key"
+        perm_mod_fail=1
+    fi
+done
+if [ $perm_mod_fail -eq 0 ]; then set_flag flag_154 1; else set_flag flag_154 0; fi
+# ======================================
+# TWGCB-01-008-0155
+# 稽核規則：記錄未授權使用者嘗試存取檔案
+access_fail=0
+if auditctl -l 2>/dev/null | grep -qF "EACCES" || \
+   grep -rqsF "EACCES" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0155][PASS] audit rule present for EACCES"
+else
+    log_append "[TWGCB-01-008-0155][FAIL] audit rule missing for EACCES"
+    access_fail=1
+fi
+if auditctl -l 2>/dev/null | grep -qF "EPERM" || \
+   grep -rqsF "EPERM" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0155][PASS] audit rule present for EPERM"
+else
+    log_append "[TWGCB-01-008-0155][FAIL] audit rule missing for EPERM"
+    access_fail=1
+fi
+if [ $access_fail -eq 0 ]; then set_flag flag_155 1; else set_flag flag_155 0; fi
+# ======================================
+# TWGCB-01-008-0156
+# 稽核規則：記錄使用者與群組帳號資訊
+identity_fail=0
+for path in /etc/group /etc/passwd /etc/gshadow /etc/shadow /etc/security/opasswd; do
+    if auditctl -l 2>/dev/null | grep -qF "$path" || \
+       grep -rqsF "$path" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0156][PASS] audit rule present for: $path"
+    else
+        log_append "[TWGCB-01-008-0156][FAIL] audit rule missing for: $path"
+        identity_fail=1
+    fi
+done
+if [ $identity_fail -eq 0 ]; then set_flag flag_156 1; else set_flag flag_156 0; fi
+# ======================================
+# TWGCB-01-008-0157
+# 稽核規則：記錄檔案系統掛載操作
+mounts_fail=0
+if auditctl -l 2>/dev/null | grep -qF "mount" || \
+   grep -rqsE "\-S mount" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0157][PASS] audit rule present for mount syscall"
+else
+    log_append "[TWGCB-01-008-0157][FAIL] audit rule missing for mount syscall"
+    mounts_fail=1
+fi
+if [ $mounts_fail -eq 0 ]; then set_flag flag_157 1; else set_flag flag_157 0; fi
+# ======================================
+# TWGCB-01-008-0158
+# 稽核規則：記錄特權指令使用與操作
+priv_fail=0
+if auditctl -l 2>/dev/null | grep -qF "privileged" || \
+   grep -rqsF "privileged" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null || \
+   [ -f /etc/audit/rules.d/privileged.rules ]; then
+    log_append "[TWGCB-01-008-0158][PASS] privileged command audit rules present"
+else
+    log_append "[TWGCB-01-008-0158][FAIL] privileged command audit rules missing"
+    priv_fail=1
+fi
+if [ $priv_fail -eq 0 ]; then set_flag flag_158 1; else set_flag flag_158 0; fi
+# ======================================
+# TWGCB-01-008-0159
+# 稽核規則：記錄檔案刪除操作
+delete_fail=0
+for key in "unlink" "unlinkat" "rename" "renameat" "rmdir"; do
+    if auditctl -l 2>/dev/null | grep -qF "$key" || \
+       grep -rqsF "$key" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0159][PASS] audit rule present for syscall: $key"
+    else
+        log_append "[TWGCB-01-008-0159][FAIL] audit rule missing for syscall: $key"
+        delete_fail=1
+    fi
+done
+if [ $delete_fail -eq 0 ]; then set_flag flag_159 1; else set_flag flag_159 0; fi
+# ======================================
+# TWGCB-01-008-0160
+# 稽核規則：記錄核心模組載入與卸載
+modules_fail=0
+for path in /sbin/insmod /sbin/rmmod /sbin/modprobe; do
+    if auditctl -l 2>/dev/null | grep -qF "$path" || \
+       grep -rqsF "$path" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0160][PASS] audit rule present for: $path"
+    else
+        log_append "[TWGCB-01-008-0160][FAIL] audit rule missing for: $path"
+        modules_fail=1
+    fi
+done
+for key in "init_module" "delete_module"; do
+    if auditctl -l 2>/dev/null | grep -qF "$key" || \
+       grep -rqsF "$key" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+        log_append "[TWGCB-01-008-0160][PASS] audit rule present for syscall: $key"
+    else
+        log_append "[TWGCB-01-008-0160][FAIL] audit rule missing for syscall: $key"
+        modules_fail=1
+    fi
+done
+if [ $modules_fail -eq 0 ]; then set_flag flag_160 1; else set_flag flag_160 0; fi
+# ======================================
+# TWGCB-01-008-0161
+# 稽核規則：記錄系統管理者的活動及變更
+sudo_log=$(grep -r logfile /etc/sudoers* 2>/dev/null | sed -e 's/.*logfile=//;s/[, ].*//' | head -1)
+sudo_log="${sudo_log:-/var/log/sudo.log}"
+actions_fail=0
+if auditctl -l 2>/dev/null | grep -qF "$sudo_log" || \
+   grep -rqsF "$sudo_log" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0161][PASS] audit rule present for sudo log: $sudo_log"
+else
+    log_append "[TWGCB-01-008-0161][FAIL] audit rule missing for sudo log: $sudo_log"
+    actions_fail=1
+fi
+if [ $actions_fail -eq 0 ]; then set_flag flag_161 1; else set_flag flag_161 0; fi
+# ======================================
+# TWGCB-01-008-0162
+# 稽核規則：記錄 chcon 指令使用
+chcon_fail=0
+if auditctl -l 2>/dev/null | grep -qF "/usr/bin/chcon" || \
+   grep -rqsF "/usr/bin/chcon" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0162][PASS] audit rule present for /usr/bin/chcon"
+else
+    log_append "[TWGCB-01-008-0162][FAIL] audit rule missing for /usr/bin/chcon"
+    chcon_fail=1
+fi
+if [ $chcon_fail -eq 0 ]; then set_flag flag_162 1; else set_flag flag_162 0; fi
+# ======================================
+# TWGCB-01-008-0163
+# 稽核規則：記錄 ssh-agent 程序使用
+sshagent_fail=0
+if auditctl -l 2>/dev/null | grep -qF "/usr/bin/ssh-agent" || \
+   grep -rqsF "/usr/bin/ssh-agent" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0163][PASS] audit rule present for /usr/bin/ssh-agent"
+else
+    log_append "[TWGCB-01-008-0163][FAIL] audit rule missing for /usr/bin/ssh-agent"
+    sshagent_fail=1
+fi
+if [ $sshagent_fail -eq 0 ]; then set_flag flag_163 1; else set_flag flag_163 0; fi
+# ======================================
+# TWGCB-01-008-0164
+# 稽核規則：記錄 unix_update 程序使用
+unixupdate_fail=0
+if auditctl -l 2>/dev/null | grep -qF "/sbin/unix_update" || \
+   grep -rqsF "/sbin/unix_update" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0164][PASS] audit rule present for /sbin/unix_update"
+else
+    log_append "[TWGCB-01-008-0164][FAIL] audit rule missing for /sbin/unix_update"
+    unixupdate_fail=1
+fi
+if [ $unixupdate_fail -eq 0 ]; then set_flag flag_164 1; else set_flag flag_164 0; fi
+# ======================================
+# TWGCB-01-008-0165
+# 稽核規則：記錄 setfacl 指令使用
+setfacl_fail=0
+if auditctl -l 2>/dev/null | grep -qF "/usr/bin/setfacl" || \
+   grep -rqsF "/usr/bin/setfacl" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0165][PASS] audit rule present for /usr/bin/setfacl"
+else
+    log_append "[TWGCB-01-008-0165][FAIL] audit rule missing for /usr/bin/setfacl"
+    setfacl_fail=1
+fi
+if [ $setfacl_fail -eq 0 ]; then set_flag flag_165 1; else set_flag flag_165 0; fi
+# ======================================
+# TWGCB-01-008-0166
+# 稽核規則：記錄 finit_module 系統呼叫
+finitmod_fail=0
+if auditctl -l 2>/dev/null | grep -qF "finit_module" || \
+   grep -rqsF "finit_module" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0166][PASS] audit rule present for finit_module"
+else
+    log_append "[TWGCB-01-008-0166][FAIL] audit rule missing for finit_module"
+    finitmod_fail=1
+fi
+if [ $finitmod_fail -eq 0 ]; then set_flag flag_166 1; else set_flag flag_166 0; fi
+# ======================================
+# TWGCB-01-008-0167
+# 稽核規則：記錄 open_by_handle_at 系統呼叫
+obha_fail=0
+if auditctl -l 2>/dev/null | grep -qF "open_by_handle_at" || \
+   grep -rqsF "open_by_handle_at" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0167][PASS] audit rule present for open_by_handle_at"
+else
+    log_append "[TWGCB-01-008-0167][FAIL] audit rule missing for open_by_handle_at"
+    obha_fail=1
+fi
+if [ $obha_fail -eq 0 ]; then set_flag flag_167 1; else set_flag flag_167 0; fi
+# ======================================
+# TWGCB-01-008-0168
+# 稽核規則：記錄 usermod 指令使用
+usermod_fail=0
+if auditctl -l 2>/dev/null | grep -qF "/usr/sbin/usermod" || \
+   grep -rqsF "/usr/sbin/usermod" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0168][PASS] audit rule present for /usr/sbin/usermod"
+else
+    log_append "[TWGCB-01-008-0168][FAIL] audit rule missing for /usr/sbin/usermod"
+    usermod_fail=1
+fi
+if [ $usermod_fail -eq 0 ]; then set_flag flag_168 1; else set_flag flag_168 0; fi
+# ======================================
+# TWGCB-01-008-0169
+# 稽核規則：記錄 chacl 指令使用
+chacl_fail=0
+if auditctl -l 2>/dev/null | grep -qF "/usr/bin/chacl" || \
+   grep -rqsF "/usr/bin/chacl" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0169][PASS] audit rule present for /usr/bin/chacl"
+else
+    log_append "[TWGCB-01-008-0169][FAIL] audit rule missing for /usr/bin/chacl"
+    chacl_fail=1
+fi
+if [ $chacl_fail -eq 0 ]; then set_flag flag_169 1; else set_flag flag_169 0; fi
+# ======================================
+# TWGCB-01-008-0170
+# 稽核規則：記錄 kmod 指令使用
+kmod_fail=0
+# kmod may be at /bin/kmod or /usr/bin/kmod
+kmod_path=$(command -v kmod 2>/dev/null || echo "/bin/kmod")
+if auditctl -l 2>/dev/null | grep -qF "kmod" || \
+   grep -rqsF "kmod" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0170][PASS] audit rule present for kmod"
+else
+    log_append "[TWGCB-01-008-0170][FAIL] audit rule missing for kmod"
+    kmod_fail=1
+fi
+if [ $kmod_fail -eq 0 ]; then set_flag flag_170 1; else set_flag flag_170 0; fi
+# ======================================
+# TWGCB-01-008-0171
+# 稽核規則：記錄登入失敗鎖定資訊
+faillock_fail=0
+if auditctl -l 2>/dev/null | grep -qF "/var/log/faillock" || \
+   grep -rqsF "/var/log/faillock" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0171][PASS] audit rule present for /var/log/faillock"
+else
+    log_append "[TWGCB-01-008-0171][FAIL] audit rule missing for /var/log/faillock"
+    faillock_fail=1
+fi
+if [ $faillock_fail -eq 0 ]; then set_flag flag_171 1; else set_flag flag_171 0; fi
+# ======================================
+# TWGCB-01-008-0172
+# 稽核規則：記錄特權提升執行操作
+execpriv_fail=0
+if auditctl -l 2>/dev/null | grep -qF "execpriv" || \
+   grep -rqsF "execpriv" /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0172][PASS] execpriv audit rules present"
+else
+    log_append "[TWGCB-01-008-0172][FAIL] execpriv audit rules missing"
+    execpriv_fail=1
+fi
+if [ $execpriv_fail -eq 0 ]; then set_flag flag_172 1; else set_flag flag_172 0; fi
+# ======================================
+# TWGCB-01-008-0173
+# 稽核規則：設定稽核規則為不可修改
+immutable_fail=0
+if grep -rqsE '^\s*-e\s+2' /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0173][PASS] audit immutable flag -e 2 is set"
+else
+    log_append "[TWGCB-01-008-0173][FAIL] audit immutable flag -e 2 is not set"
+    immutable_fail=1
+fi
+if grep -rqsF -- '--loginuid-immutable' /etc/audit/rules.d/ /etc/audit/audit.rules 2>/dev/null; then
+    log_append "[TWGCB-01-008-0173][PASS] --loginuid-immutable is set"
+else
+    log_append "[TWGCB-01-008-0173][FAIL] --loginuid-immutable is not set"
+    immutable_fail=1
+fi
+if [ $immutable_fail -eq 0 ]; then set_flag flag_173 1; else set_flag flag_173 0; fi
+# ======================================
+# TWGCB-01-008-0174
+# rsyslog 套件安裝
+if rpm -q rsyslog &>/dev/null; then
+    log_append "[TWGCB-01-008-0174][PASS] rsyslog is installed"
+    set_flag flag_174 1
+else
+    log_append "[TWGCB-01-008-0174][FAIL] rsyslog is not installed"
+    set_flag flag_174 0
+fi
+# ======================================
+# TWGCB-01-008-0175
+# rsyslog 服務啟用
+if systemctl is-enabled rsyslog > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0175][PASS] rsyslog service is enabled"
+    set_flag flag_175 1
+else
+    log_append "[TWGCB-01-008-0175][FAIL] rsyslog service is not enabled"
+    set_flag flag_175 0
+fi
+# ======================================
+# TWGCB-01-008-0176
+# rsyslog FileCreateMode 設定為 0640
+if grep -rqsE '^\s*\$FileCreateMode\s+0?640' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null; then
+    log_append "[TWGCB-01-008-0176][PASS] rsyslog FileCreateMode is 0640"
+    set_flag flag_176 1
+else
+    log_append "[TWGCB-01-008-0176][FAIL] rsyslog FileCreateMode is not set to 0640"
+    set_flag flag_176 0
+fi
+# ======================================
+# TWGCB-01-008-0177
+# rsyslog 記錄 auth/authpriv/daemon 事件
+if grep -rqsE 'auth\.\*.*authpriv\.\*|authpriv\.\*.*auth\.\*' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null; then
+    log_append "[TWGCB-01-008-0177][PASS] rsyslog auth logging is configured"
+    set_flag flag_177 1
+else
+    log_append "[TWGCB-01-008-0177][FAIL] rsyslog auth logging is not configured"
+    set_flag flag_177 0
+fi
+# ======================================
+# TWGCB-01-008-0178
+# /var/log/messages 所有權
+if [ -f /var/log/messages ]; then
+    owner178=$(stat -c "%U:%G" /var/log/messages)
+    if [ "$owner178" = "root:root" ]; then
+        log_append "[TWGCB-01-008-0178][PASS] /var/log/messages is owned by root:root"
+        set_flag flag_178 1
+    else
+        log_append "[TWGCB-01-008-0178][FAIL] /var/log/messages is owned by $owner178 (expected root:root)"
+        set_flag flag_178 0
+    fi
+else
+    log_append "[TWGCB-01-008-0178][SKIP] /var/log/messages does not exist"
+    set_flag flag_178 2
+fi
+# ======================================
+# TWGCB-01-008-0179
+# /var/log 目錄所有權
+owner179=$(stat -c "%U:%G" /var/log 2>/dev/null)
+if [ "$owner179" = "root:root" ]; then
+    log_append "[TWGCB-01-008-0179][PASS] /var/log is owned by root:root"
+    set_flag flag_179 1
+else
+    log_append "[TWGCB-01-008-0179][FAIL] /var/log is owned by $owner179 (expected root:root)"
+    set_flag flag_179 0
+fi
+# ======================================
+# TWGCB-01-008-0180
+# systemd-journald 轉發至 syslog
+if grep -qsE '^\s*ForwardToSyslog\s*=\s*yes' /etc/systemd/journald.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0180][PASS] journald ForwardToSyslog=yes is configured"
+    set_flag flag_180 1
+else
+    log_append "[TWGCB-01-008-0180][FAIL] journald ForwardToSyslog=yes is not configured"
+    set_flag flag_180 0
+fi
+# ======================================
+# TWGCB-01-008-0181
+# journald 記錄檔壓縮
+if grep -qsE '^\s*Compress\s*=\s*yes' /etc/systemd/journald.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0181][PASS] journald Compress=yes is configured"
+    set_flag flag_181 1
+else
+    log_append "[TWGCB-01-008-0181][FAIL] journald Compress=yes is not configured"
+    set_flag flag_181 0
+fi
+# ======================================
+# TWGCB-01-008-0182
+# journald 將日誌寫至持久化存儲媒體
+if grep -qsE '^\s*Storage\s*=\s*persistent' /etc/systemd/journald.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0182][PASS] journald Storage=persistent is configured"
+    set_flag flag_182 1
+else
+    log_append "[TWGCB-01-008-0182][FAIL] journald Storage=persistent is not configured"
+    set_flag flag_182 0
+fi
+# (0183/0184 不存在於文件中，跳過)
+# ======================================
+# TWGCB-01-008-0185
+# SELinux 套件安裝
+if rpm -q libselinux &>/dev/null; then
+    log_append "[TWGCB-01-008-0185][PASS] libselinux is installed"
+    set_flag flag_185 1
+else
+    log_append "[TWGCB-01-008-0185][FAIL] libselinux is not installed"
+    set_flag flag_185 0
+fi
+# ======================================
+# TWGCB-01-008-0186
+# 開機程序中未啟用 SELinux 禁用參數
+grub186_fail=0
+if grep -qP '(selinux=0|enforcing=0)' /proc/cmdline 2>/dev/null; then
+    log_append "[TWGCB-01-008-0186][FAIL] selinux=0 or enforcing=0 found in current kernel cmdline"
+    grub186_fail=1
+else
+    log_append "[TWGCB-01-008-0186][PASS] no selinux=0 or enforcing=0 in current kernel cmdline"
+fi
+if grep -qP '(selinux=0|enforcing=0)' /etc/default/grub 2>/dev/null; then
+    log_append "[TWGCB-01-008-0186][FAIL] selinux=0 or enforcing=0 found in /etc/default/grub"
+    grub186_fail=1
+else
+    log_append "[TWGCB-01-008-0186][PASS] no selinux=0 or enforcing=0 in /etc/default/grub"
+fi
+if [ $grub186_fail -eq 0 ]; then set_flag flag_186 1; else set_flag flag_186 0; fi
+# ======================================
+# TWGCB-01-008-0187
+# SELinux 框架設定
+if grep -qsE '^\s*SELINUXTYPE\s*=\s*targeted' /etc/selinux/config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0187][PASS] SELINUXTYPE=targeted is configured"
+    set_flag flag_187 1
+else
+    log_append "[TWGCB-01-008-0187][FAIL] SELINUXTYPE=targeted is not configured"
+    set_flag flag_187 0
+fi
+# ======================================
+# TWGCB-01-008-0188
+# SELinux 啟用狀態
+selinux188_fail=0
+if grep -qsE '^\s*SELINUX\s*=\s*enforcing' /etc/selinux/config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0188][PASS] SELINUX=enforcing in /etc/selinux/config"
+else
+    log_append "[TWGCB-01-008-0188][FAIL] SELINUX=enforcing not set in /etc/selinux/config"
+    selinux188_fail=1
+fi
+selinux_mode=$(getenforce 2>/dev/null)
+if [ "$selinux_mode" = "Enforcing" ]; then
+    log_append "[TWGCB-01-008-0188][PASS] SELinux runtime mode is Enforcing"
+else
+    log_append "[TWGCB-01-008-0188][FAIL] SELinux runtime mode is $selinux_mode (expected Enforcing)"
+    selinux188_fail=1
+fi
+if [ $selinux188_fail -eq 0 ]; then set_flag flag_188 1; else set_flag flag_188 0; fi
+# ======================================
+# TWGCB-01-008-0189
+# 未設定的服務程序（需人工確認）
+unconfined_count=$(ps -eZf 2>/dev/null | grep unconfined_service_t | grep -v grep | wc -l)
+if [ "$unconfined_count" -eq 0 ]; then
+    log_append "[TWGCB-01-008-0189][PASS] no unconfined_service_t processes found"
+    set_flag flag_189 1
+else
+    log_append "[TWGCB-01-008-0189][FAIL] $unconfined_count unconfined_service_t process(es) found (manual remediation required)"
+    set_flag flag_189 0
+fi
+# ======================================
+# TWGCB-01-008-0190
+# setroubleshoot 套件移除
+if rpm -q setroubleshoot &>/dev/null; then
+    log_append "[TWGCB-01-008-0190][FAIL] setroubleshoot is installed and must be removed"
+    set_flag flag_190 0
+else
+    log_append "[TWGCB-01-008-0190][PASS] setroubleshoot is not installed"
+    set_flag flag_190 1
+fi
+# ======================================
+# TWGCB-01-008-0191
+# mcstrans 套件移除
+if rpm -q mcstrans &>/dev/null; then
+    log_append "[TWGCB-01-008-0191][FAIL] mcstrans is installed and must be removed"
+    set_flag flag_191 0
+else
+    log_append "[TWGCB-01-008-0191][PASS] mcstrans is not installed"
+    set_flag flag_191 1
+fi
+# ======================================
+# TWGCB-01-008-0192
+# cron 工作程序啟用
+if systemctl is-enabled crond > /dev/null 2>&1; then
+    log_append "[TWGCB-01-008-0192][PASS] crond service is enabled"
+    set_flag flag_192 1
+else
+    log_append "[TWGCB-01-008-0192][FAIL] crond service is not enabled"
+    set_flag flag_192 0
+fi
+# ======================================
+# TWGCB-01-008-0193
+# /etc/crontab 所有權
+owner193=$(stat -c "%U:%G" /etc/crontab 2>/dev/null)
+if [ "$owner193" = "root:root" ]; then
+    log_append "[TWGCB-01-008-0193][PASS] /etc/crontab is owned by root:root"
+    set_flag flag_193 1
+else
+    log_append "[TWGCB-01-008-0193][FAIL] /etc/crontab is owned by $owner193 (expected root:root)"
+    set_flag flag_193 0
+fi
+# ======================================
+# TWGCB-01-008-0194
+# /etc/crontab 權限
+perm194=$(stat -c "%a" /etc/crontab 2>/dev/null)
+if [ $(( 8#${perm194: -3} & ~8#600 & 8#777 )) -eq 0 ]; then
+    log_append "[TWGCB-01-008-0194][PASS] /etc/crontab has permission $perm194 (600 or more restrictive)"
+    set_flag flag_194 1
+else
+    log_append "[TWGCB-01-008-0194][FAIL] /etc/crontab has permission $perm194 (expected 600 or more restrictive)"
+    set_flag flag_194 0
+fi
+# ======================================
+# TWGCB-01-008-0195
+# /etc/cron.hourly 所有權
+owner195=$(stat -c "%U:%G" /etc/cron.hourly 2>/dev/null)
+if [ "$owner195" = "root:root" ]; then
+    log_append "[TWGCB-01-008-0195][PASS] /etc/cron.hourly is owned by root:root"
+    set_flag flag_195 1
+else
+    log_append "[TWGCB-01-008-0195][FAIL] /etc/cron.hourly is owned by $owner195 (expected root:root)"
+    set_flag flag_195 0
+fi
+# ======================================
+# TWGCB-01-008-0196
+# /etc/cron.hourly 權限
+perm196=$(stat -c "%a" /etc/cron.hourly 2>/dev/null)
+if [ $(( 8#${perm196: -3} & ~8#700 & 8#777 )) -eq 0 ]; then
+    log_append "[TWGCB-01-008-0196][PASS] /etc/cron.hourly has permission $perm196 (700 or more restrictive)"
+    set_flag flag_196 1
+else
+    log_append "[TWGCB-01-008-0196][FAIL] /etc/cron.hourly has permission $perm196 (expected 700 or more restrictive)"
+    set_flag flag_196 0
+fi
+# ======================================
+# TWGCB-01-008-0197
+# /etc/cron.daily 所有權
+owner197=$(stat -c "%U:%G" /etc/cron.daily 2>/dev/null)
+if [ "$owner197" = "root:root" ]; then
+    log_append "[TWGCB-01-008-0197][PASS] /etc/cron.daily is owned by root:root"
+    set_flag flag_197 1
+else
+    log_append "[TWGCB-01-008-0197][FAIL] /etc/cron.daily is owned by $owner197 (expected root:root)"
+    set_flag flag_197 0
+fi
+# ======================================
+# TWGCB-01-008-0198
+# /etc/cron.daily 權限
+perm198=$(stat -c "%a" /etc/cron.daily 2>/dev/null)
+if [ $(( 8#${perm198: -3} & ~8#700 & 8#777 )) -eq 0 ]; then
+    log_append "[TWGCB-01-008-0198][PASS] /etc/cron.daily has permission $perm198 (700 or more restrictive)"
+    set_flag flag_198 1
+else
+    log_append "[TWGCB-01-008-0198][FAIL] /etc/cron.daily has permission $perm198 (expected 700 or more restrictive)"
+    set_flag flag_198 0
+fi
+# ======================================
+# TWGCB-01-008-0199
+# /etc/cron.weekly 所有權
+owner199=$(stat -c "%U:%G" /etc/cron.weekly 2>/dev/null)
+if [ "$owner199" = "root:root" ]; then
+    log_append "[TWGCB-01-008-0199][PASS] /etc/cron.weekly is owned by root:root"
+    set_flag flag_199 1
+else
+    log_append "[TWGCB-01-008-0199][FAIL] /etc/cron.weekly is owned by $owner199 (expected root:root)"
+    set_flag flag_199 0
+fi
+# ======================================
+# TWGCB-01-008-0200
+# /etc/cron.weekly 權限
+perm200=$(stat -c "%a" /etc/cron.weekly 2>/dev/null)
+if [ $(( 8#${perm200: -3} & ~8#700 & 8#777 )) -eq 0 ]; then
+    log_append "[TWGCB-01-008-0200][PASS] /etc/cron.weekly has permission $perm200 (700 or more restrictive)"
+    set_flag flag_200 1
+else
+    log_append "[TWGCB-01-008-0200][FAIL] /etc/cron.weekly has permission $perm200 (expected 700 or more restrictive)"
+    set_flag flag_200 0
+fi
+# ======================================
+# TWGCB-01-008-0201
+# /etc/cron.monthly 所有權
+owner201=$(stat -c "%U:%G" /etc/cron.monthly 2>/dev/null)
+if [ "$owner201" = "root:root" ]; then
+    log_append "[TWGCB-01-008-0201][PASS] /etc/cron.monthly is owned by root:root"
+    set_flag flag_201 1
+else
+    log_append "[TWGCB-01-008-0201][FAIL] /etc/cron.monthly is owned by $owner201 (expected root:root)"
+    set_flag flag_201 0
+fi
+# ======================================
+# TWGCB-01-008-0202
+# /etc/cron.monthly 權限
+perm202=$(stat -c "%a" /etc/cron.monthly 2>/dev/null)
+if [ $(( 8#${perm202: -3} & ~8#700 & 8#777 )) -eq 0 ]; then
+    log_append "[TWGCB-01-008-0202][PASS] /etc/cron.monthly has permission $perm202 (700 or more restrictive)"
+    set_flag flag_202 1
+else
+    log_append "[TWGCB-01-008-0202][FAIL] /etc/cron.monthly has permission $perm202 (expected 700 or more restrictive)"
+    set_flag flag_202 0
+fi
+# ======================================
+# TWGCB-01-008-0203
+# /etc/cron.d 所有權
+owner203=$(stat -c "%U:%G" /etc/cron.d 2>/dev/null)
+if [ "$owner203" = "root:root" ]; then
+    log_append "[TWGCB-01-008-0203][PASS] /etc/cron.d is owned by root:root"
+    set_flag flag_203 1
+else
+    log_append "[TWGCB-01-008-0203][FAIL] /etc/cron.d is owned by $owner203 (expected root:root)"
+    set_flag flag_203 0
+fi
+# ======================================
+# TWGCB-01-008-0204
+# /etc/cron.d 權限
+perm204=$(stat -c "%a" /etc/cron.d 2>/dev/null)
+if [ $(( 8#${perm204: -3} & ~8#700 & 8#777 )) -eq 0 ]; then
+    log_append "[TWGCB-01-008-0204][PASS] /etc/cron.d has permission $perm204 (700 or more restrictive)"
+    set_flag flag_204 1
+else
+    log_append "[TWGCB-01-008-0204][FAIL] /etc/cron.d has permission $perm204 (expected 700 or more restrictive)"
+    set_flag flag_204 0
+fi
+# ======================================
+# TWGCB-01-008-0205
+# cron.allow/at.allow 所有權
+cron205_fail=0
+for f in /etc/cron.allow /etc/at.allow; do
+    if [ -f "$f" ]; then
+        own=$(stat -c "%U:%G" "$f")
+        if [ "$own" = "root:root" ]; then
+            log_append "[TWGCB-01-008-0205][PASS] $f exists and is owned by root:root"
+        else
+            log_append "[TWGCB-01-008-0205][FAIL] $f is owned by $own (expected root:root)"
+            cron205_fail=1
+        fi
+    else
+        log_append "[TWGCB-01-008-0205][FAIL] $f does not exist"
+        cron205_fail=1
+    fi
+done
+if [ -f /etc/cron.deny ] || [ -f /etc/at.deny ]; then
+    log_append "[TWGCB-01-008-0205][FAIL] /etc/cron.deny or /etc/at.deny exists (should be removed)"
+    cron205_fail=1
+fi
+if [ $cron205_fail -eq 0 ]; then set_flag flag_205 1; else set_flag flag_205 0; fi
+# ======================================
+# TWGCB-01-008-0206
+# cron.allow/at.allow 權限
+cron206_fail=0
+for f in /etc/cron.allow /etc/at.allow; do
+    if [ -f "$f" ]; then
+        perm=$(stat -c "%a" "$f")
+        if [ $(( 8#${perm: -3} & ~8#600 & 8#777 )) -eq 0 ]; then
+            log_append "[TWGCB-01-008-0206][PASS] $f has permission $perm (600 or more restrictive)"
+        else
+            log_append "[TWGCB-01-008-0206][FAIL] $f has permission $perm (expected 600 or more restrictive)"
+            cron206_fail=1
+        fi
+    else
+        log_append "[TWGCB-01-008-0206][FAIL] $f does not exist"
+        cron206_fail=1
+    fi
+done
+if [ $cron206_fail -eq 0 ]; then set_flag flag_206 1; else set_flag flag_206 0; fi
+# ======================================
+# TWGCB-01-008-0207
+# rsyslog cron 日誌記錄設定
+if grep -rqsE 'cron\.\*' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null; then
+    log_append "[TWGCB-01-008-0207][PASS] rsyslog cron logging is configured"
+    set_flag flag_207 1
+else
+    log_append "[TWGCB-01-008-0207][FAIL] rsyslog cron logging is not configured"
+    set_flag flag_207 0
+fi
+# ======================================
+# TWGCB-01-008-0208
+# PAM 密碼重試次數限制
+pam208_fail=0
+for f in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
+    [ ! -f "$f" ] && continue
+    if grep -qE '^\s*password\s+requisite\s+pam_pwquality.so.*retry=3' "$f" 2>/dev/null || \
+       grep -qE '^\s*retry\s*=\s*3' /etc/security/pwquality.conf 2>/dev/null; then
+        log_append "[TWGCB-01-008-0208][PASS] pwquality retry=3 is configured"
+    else
+        log_append "[TWGCB-01-008-0208][FAIL] pwquality retry=3 is not configured in $f"
+        pam208_fail=1
+    fi
+    break
+done
+if grep -qE '^\s*Retry\s*=\s*3' /etc/security/pwquality.conf 2>/dev/null || \
+   grep -qE '^\s*retry\s*=\s*3' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0208][PASS] pwquality retry=3 in pwquality.conf"
+    pam208_fail=0
+fi
+if [ $pam208_fail -eq 0 ]; then set_flag flag_208 1; else set_flag flag_208 0; fi
+# ======================================
+# TWGCB-01-008-0209
+# PAM 強制 root 帳號也須符合密碼品質要求
+pam209_fail=0
+for f in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
+    [ ! -f "$f" ] && continue
+    if grep -qE '^\s*password\s+requisite\s+pam_pwquality.so.*enforce_for_root' "$f" 2>/dev/null; then
+        log_append "[TWGCB-01-008-0209][PASS] enforce_for_root is configured in $f"
+    else
+        log_append "[TWGCB-01-008-0209][FAIL] enforce_for_root is not configured in $f"
+        pam209_fail=1
+    fi
+done
+if [ $pam209_fail -eq 0 ]; then set_flag flag_209 1; else set_flag flag_209 0; fi
+# ======================================
+# TWGCB-01-008-0210
+# 密碼最小長度設定（minlen=12）
+pw210_fail=0
+if grep -qsE '^\s*minlen\s*=\s*(1[2-9]|[2-9][0-9])' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0210][PASS] pwquality minlen >= 12"
+else
+    log_append "[TWGCB-01-008-0210][FAIL] pwquality minlen is not set to 12 or more"
+    pw210_fail=1
+fi
+if grep -qsE '^\s*PASS_MIN_LEN\s+(1[2-9]|[2-9][0-9])' /etc/login.defs 2>/dev/null; then
+    log_append "[TWGCB-01-008-0210][PASS] login.defs PASS_MIN_LEN >= 12"
+else
+    log_append "[TWGCB-01-008-0210][FAIL] login.defs PASS_MIN_LEN is not set to 12 or more"
+    pw210_fail=1
+fi
+if [ $pw210_fail -eq 0 ]; then set_flag flag_210 1; else set_flag flag_210 0; fi
+# ======================================
+# TWGCB-01-008-0211
+# 密碼字元類別要求（minclass=4）
+if grep -qsE '^\s*minclass\s*=\s*[4-9]' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0211][PASS] pwquality minclass >= 4"
+    set_flag flag_211 1
+else
+    log_append "[TWGCB-01-008-0211][FAIL] pwquality minclass is not set to 4 or more"
+    set_flag flag_211 0
+fi
+# ======================================
+# TWGCB-01-008-0212
+# 密碼須含數字（dcredit=-1）
+if grep -qsE '^\s*dcredit\s*=\s*-[1-9]' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0212][PASS] pwquality dcredit is set (require at least 1 digit)"
+    set_flag flag_212 1
+else
+    log_append "[TWGCB-01-008-0212][FAIL] pwquality dcredit is not set to -1 or less"
+    set_flag flag_212 0
+fi
 
 echo
 grep -E 'FAIL|CRITICAL' "$log"
