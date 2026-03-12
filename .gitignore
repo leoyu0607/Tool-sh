@@ -5,3 +5,4 @@ settings.local.json
 *items.txt
 item*.txt
 extensions.json
+GCB/transform_comments.py

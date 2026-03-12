@@ -2258,7 +2258,9 @@ fi
 audit_log_file=$(awk -F'[= \t]+' '/^\s*log_file\s*=/{print $2}' /etc/audit/auditd.conf 2>/dev/null)
 audit_log_file="${audit_log_file:-/var/log/audit/audit.log}"
 audit_log_dir=$(dirname "$audit_log_file")
-# 0137 - 稽核日誌檔案所有權
+# ======================================
+# TWGCB-01-008-0137
+# 稽核日誌檔案所有權
 if [ $flag_137 -eq 0 ]; then
     if [ -f "$audit_log_file" ]; then
         if chown root:root "$audit_log_file"; then
@@ -2270,7 +2272,9 @@ if [ $flag_137 -eq 0 ]; then
         fi
     fi
 fi
-# 0138 - 稽核日誌檔案權限
+# ======================================
+# TWGCB-01-008-0138
+# 稽核日誌檔案權限
 if [ $flag_138 -eq 0 ]; then
     if [ -f "$audit_log_file" ]; then
         if chmod 600 "$audit_log_file"; then
@@ -2282,7 +2286,9 @@ if [ $flag_138 -eq 0 ]; then
         fi
     fi
 fi
-# 0139 - 稽核日誌目錄所有權
+# ======================================
+# TWGCB-01-008-0139
+# 稽核日誌目錄所有權
 if [ $flag_139 -eq 0 ]; then
     if [ -d "$audit_log_dir" ]; then
         if chown root:root "$audit_log_dir"; then
@@ -2294,7 +2300,9 @@ if [ $flag_139 -eq 0 ]; then
         fi
     fi
 fi
-# 0140 - 稽核日誌目錄權限
+# ======================================
+# TWGCB-01-008-0140
+# 稽核日誌目錄權限
 if [ $flag_140 -eq 0 ]; then
     if [ -d "$audit_log_dir" ]; then
         if chmod 700 "$audit_log_dir"; then
@@ -2306,7 +2314,9 @@ if [ $flag_140 -eq 0 ]; then
         fi
     fi
 fi
-# 0141 - 稽核規則檔案權限
+# ======================================
+# TWGCB-01-008-0141
+# 稽核規則檔案權限
 if [ $flag_141 -eq 0 ]; then
     audit_rules_file="/etc/audit/rules.d/audit.rules"
     if [ -f "$audit_rules_file" ]; then
@@ -2319,7 +2329,9 @@ if [ $flag_141 -eq 0 ]; then
         fi
     fi
 fi
-# 0142 - auditd.conf 檔案權限
+# ======================================
+# TWGCB-01-008-0142
+# auditd.conf 檔案權限
 if [ $flag_142 -eq 0 ]; then
     if chmod 640 /etc/audit/auditd.conf; then
         set_flag flag_142 1
@@ -2329,7 +2341,9 @@ if [ $flag_142 -eq 0 ]; then
         log_append "[TWGCB-01-008-0142][ERROR] failed to chmod /etc/audit/auditd.conf"
     fi
 fi
-# 0143 - 稽核工具檔案權限
+# ======================================
+# TWGCB-01-008-0143
+# 稽核工具檔案權限
 if [ $flag_143 -eq 0 ]; then
     fail143=0
     audit_tools="/sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/audisp-remote /sbin/audisp-syslog /sbin/augenrules /sbin/rsyslogd"
@@ -2347,7 +2361,9 @@ if [ $flag_143 -eq 0 ]; then
     done
     if [ $fail143 -eq 0 ]; then set_flag flag_143 1; else set_flag flag_143 0; fi
 fi
-# 0144 - 稽核工具所有權
+# ======================================
+# TWGCB-01-008-0144
+# 稽核工具所有權
 if [ $flag_144 -eq 0 ]; then
     fail144=0
     audit_tools="/sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/audisp-remote /sbin/audisp-syslog /sbin/augenrules /sbin/rsyslogd"
@@ -2365,7 +2381,9 @@ if [ $flag_144 -eq 0 ]; then
     done
     if [ $fail144 -eq 0 ]; then set_flag flag_144 1; else set_flag flag_144 0; fi
 fi
-# 0145 - AIDE 監控稽核工具（僅在 AIDE 已安裝時執行）
+# ======================================
+# TWGCB-01-008-0145
+# AIDE 監控稽核工具（僅在 AIDE 已安裝時執行）
 if [ "${flag_145:-2}" -eq 0 ]; then
     if command -v aide &>/dev/null; then
         aide_conf="/etc/aide.conf"
@@ -2390,7 +2408,9 @@ if [ "${flag_145:-2}" -eq 0 ]; then
         fi
     fi
 fi
-# 0146 - auditd max_log_file 設定
+# ======================================
+# TWGCB-01-008-0146
+# auditd max_log_file 設定
 if [ $flag_146 -eq 0 ]; then
     auditd_conf="/etc/audit/auditd.conf"
     if grep -qiE '^\s*max_log_file\s*=' "$auditd_conf" 2>/dev/null; then
@@ -2401,7 +2421,9 @@ if [ $flag_146 -eq 0 ]; then
     set_flag flag_146 1
     log_append "[TWGCB-01-008-0146][FIX] set max_log_file = 32 in $auditd_conf"
 fi
-# 0147 - auditd max_log_file_action 設定
+# ======================================
+# TWGCB-01-008-0147
+# auditd max_log_file_action 設定
 if [ $flag_147 -eq 0 ]; then
     auditd_conf="/etc/audit/auditd.conf"
     if grep -qiE '^\s*max_log_file_action\s*=' "$auditd_conf" 2>/dev/null; then
@@ -2412,7 +2434,9 @@ if [ $flag_147 -eq 0 ]; then
     set_flag flag_147 1
     log_append "[TWGCB-01-008-0147][FIX] set max_log_file_action = keep_logs in $auditd_conf"
 fi
-# 0148 - 稽核 sudoers 變更規則
+# ======================================
+# TWGCB-01-008-0148
+# 稽核 sudoers 變更規則
 if [ $flag_148 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2432,7 +2456,9 @@ if [ $flag_148 -eq 0 ]; then
     fi
     set_flag flag_148 1
 fi
-# 0149 - 稽核登入失敗記錄規則
+# ======================================
+# TWGCB-01-008-0149
+# 稽核登入失敗記錄規則
 if [ $flag_149 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2452,7 +2478,9 @@ if [ $flag_149 -eq 0 ]; then
     fi
     set_flag flag_149 1
 fi
-# 0150 - 稽核 Session 記錄規則
+# ======================================
+# TWGCB-01-008-0150
+# 稽核 Session 記錄規則
 if [ $flag_150 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2477,7 +2505,9 @@ if [ $flag_150 -eq 0 ]; then
     fi
     set_flag flag_150 1
 fi
-# 0151 - 稽核系統時間修改規則
+# ======================================
+# TWGCB-01-008-0151
+# 稽核系統時間修改規則
 if [ $flag_151 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2499,7 +2529,9 @@ if [ $flag_151 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_151 1
 fi
-# 0152 - 稽核強制存取控制設定規則
+# ======================================
+# TWGCB-01-008-0152
+# 稽核強制存取控制設定規則
 if [ $flag_152 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2518,7 +2550,9 @@ if [ $flag_152 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_152 1
 fi
-# 0153 - 稽核系統區域資訊變更規則
+# ======================================
+# TWGCB-01-008-0153
+# 稽核系統區域資訊變更規則
 if [ $flag_153 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2541,7 +2575,9 @@ if [ $flag_153 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_153 1
 fi
-# 0154 - 稽核自主存取控制權限修改規則
+# ======================================
+# TWGCB-01-008-0154
+# 稽核自主存取控制權限修改規則
 if [ $flag_154 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2564,7 +2600,9 @@ if [ $flag_154 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_154 1
 fi
-# 0155 - 稽核未授權存取嘗試規則
+# ======================================
+# TWGCB-01-008-0155
+# 稽核未授權存取嘗試規則
 if [ $flag_155 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2585,7 +2623,9 @@ if [ $flag_155 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_155 1
 fi
-# 0156 - 稽核使用者與群組帳號資訊規則
+# ======================================
+# TWGCB-01-008-0156
+# 稽核使用者與群組帳號資訊規則
 if [ $flag_156 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2607,7 +2647,9 @@ if [ $flag_156 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_156 1
 fi
-# 0157 - 稽核檔案系統掛載操作規則
+# ======================================
+# TWGCB-01-008-0157
+# 稽核檔案系統掛載操作規則
 if [ $flag_157 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2626,7 +2668,9 @@ if [ $flag_157 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_157 1
 fi
-# 0158 - 稽核特權指令使用規則
+# ======================================
+# TWGCB-01-008-0158
+# 稽核特權指令使用規則
 if [ $flag_158 -eq 0 ]; then
     priv_rules="/etc/audit/rules.d/privileged.rules"
     find / -xdev \( -perm -4000 -o -perm -2000 \) -type f 2>/dev/null | \
@@ -2636,7 +2680,9 @@ if [ $flag_158 -eq 0 ]; then
     set_flag flag_158 1
     log_append "[TWGCB-01-008-0158][FIX] generated privileged command audit rules in $priv_rules"
 fi
-# 0159 - 稽核檔案刪除操作規則
+# ======================================
+# TWGCB-01-008-0159
+# 稽核檔案刪除操作規則
 if [ $flag_159 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2655,7 +2701,9 @@ if [ $flag_159 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_159 1
 fi
-# 0160 - 稽核核心模組載入卸載規則
+# ======================================
+# TWGCB-01-008-0160
+# 稽核核心模組載入卸載規則
 if [ $flag_160 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2677,7 +2725,9 @@ if [ $flag_160 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_160 1
 fi
-# 0161 - 稽核系統管理者活動規則
+# ======================================
+# TWGCB-01-008-0161
+# 稽核系統管理者活動規則
 if [ $flag_161 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2691,7 +2741,9 @@ if [ $flag_161 -eq 0 ]; then
     fi
     set_flag flag_161 1
 fi
-# 0162 - 稽核 chcon 指令規則
+# ======================================
+# TWGCB-01-008-0162
+# 稽核 chcon 指令規則
 if [ $flag_162 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2703,7 +2755,9 @@ if [ $flag_162 -eq 0 ]; then
     fi
     set_flag flag_162 1
 fi
-# 0163 - 稽核 ssh-agent 程序規則
+# ======================================
+# TWGCB-01-008-0163
+# 稽核 ssh-agent 程序規則
 if [ $flag_163 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2715,7 +2769,9 @@ if [ $flag_163 -eq 0 ]; then
     fi
     set_flag flag_163 1
 fi
-# 0164 - 稽核 unix_update 程序規則
+# ======================================
+# TWGCB-01-008-0164
+# 稽核 unix_update 程序規則
 if [ $flag_164 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2727,7 +2783,9 @@ if [ $flag_164 -eq 0 ]; then
     fi
     set_flag flag_164 1
 fi
-# 0165 - 稽核 setfacl 指令規則
+# ======================================
+# TWGCB-01-008-0165
+# 稽核 setfacl 指令規則
 if [ $flag_165 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2739,7 +2797,9 @@ if [ $flag_165 -eq 0 ]; then
     fi
     set_flag flag_165 1
 fi
-# 0166 - 稽核 finit_module 系統呼叫規則
+# ======================================
+# TWGCB-01-008-0166
+# 稽核 finit_module 系統呼叫規則
 if [ $flag_166 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2758,7 +2818,9 @@ if [ $flag_166 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_166 1
 fi
-# 0167 - 稽核 open_by_handle_at 系統呼叫規則
+# ======================================
+# TWGCB-01-008-0167
+# 稽核 open_by_handle_at 系統呼叫規則
 if [ $flag_167 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2779,7 +2841,9 @@ if [ $flag_167 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_167 1
 fi
-# 0168 - 稽核 usermod 指令規則
+# ======================================
+# TWGCB-01-008-0168
+# 稽核 usermod 指令規則
 if [ $flag_168 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2791,7 +2855,9 @@ if [ $flag_168 -eq 0 ]; then
     fi
     set_flag flag_168 1
 fi
-# 0169 - 稽核 chacl 指令規則
+# ======================================
+# TWGCB-01-008-0169
+# 稽核 chacl 指令規則
 if [ $flag_169 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2803,7 +2869,9 @@ if [ $flag_169 -eq 0 ]; then
     fi
     set_flag flag_169 1
 fi
-# 0170 - 稽核 kmod 指令規則
+# ======================================
+# TWGCB-01-008-0170
+# 稽核 kmod 指令規則
 if [ $flag_170 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2816,7 +2884,9 @@ if [ $flag_170 -eq 0 ]; then
     fi
     set_flag flag_170 1
 fi
-# 0171 - 稽核 faillock 登入失敗規則
+# ======================================
+# TWGCB-01-008-0171
+# 稽核 faillock 登入失敗規則
 if [ $flag_171 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2828,7 +2898,9 @@ if [ $flag_171 -eq 0 ]; then
     fi
     set_flag flag_171 1
 fi
-# 0172 - 稽核特權提升執行規則
+# ======================================
+# TWGCB-01-008-0172
+# 稽核特權提升執行規則
 if [ $flag_172 -eq 0 ]; then
     gcb_rules="/etc/audit/rules.d/50-gcb.rules"
     touch "$gcb_rules"
@@ -2849,7 +2921,9 @@ if [ $flag_172 -eq 0 ]; then
     [ $changed -eq 1 ] && augenrules --load 2>/dev/null
     set_flag flag_172 1
 fi
-# 0173 - 設定稽核規則不可修改
+# ======================================
+# TWGCB-01-008-0173
+# 設定稽核規則不可修改
 if [ $flag_173 -eq 0 ]; then
     immutable_rules="/etc/audit/rules.d/99-immutable.rules"
     touch "$immutable_rules"
@@ -2864,7 +2938,9 @@ if [ $flag_173 -eq 0 ]; then
     augenrules --load 2>/dev/null
     set_flag flag_173 1
 fi
-# 0174 - 安裝 rsyslog 套件
+# ======================================
+# TWGCB-01-008-0174
+# 安裝 rsyslog 套件
 if [ $flag_174 -eq 0 ]; then
     if dnf install -y rsyslog 2>/dev/null; then
         set_flag flag_174 1
@@ -2874,7 +2950,9 @@ if [ $flag_174 -eq 0 ]; then
         log_append "[TWGCB-01-008-0174][ERROR] failed to install rsyslog"
     fi
 fi
-# 0175 - 啟用 rsyslog 服務
+# ======================================
+# TWGCB-01-008-0175
+# 啟用 rsyslog 服務
 if [ $flag_175 -eq 0 ]; then
     if systemctl --now enable rsyslog 2>/dev/null; then
         set_flag flag_175 1
@@ -2884,7 +2962,9 @@ if [ $flag_175 -eq 0 ]; then
         log_append "[TWGCB-01-008-0175][ERROR] failed to enable rsyslog"
     fi
 fi
-# 0176 - 設定 rsyslog FileCreateMode 為 0640
+# ======================================
+# TWGCB-01-008-0176
+# 設定 rsyslog FileCreateMode 為 0640
 if [ $flag_176 -eq 0 ]; then
     rsyslog_conf="/etc/rsyslog.conf"
     if grep -qsE '^\s*\$FileCreateMode' "$rsyslog_conf" 2>/dev/null; then
@@ -2896,7 +2976,9 @@ if [ $flag_176 -eq 0 ]; then
     set_flag flag_176 1
     log_append "[TWGCB-01-008-0176][FIX] set FileCreateMode 0640 in $rsyslog_conf"
 fi
-# 0177 - 設定 rsyslog 記錄 auth/authpriv/daemon
+# ======================================
+# TWGCB-01-008-0177
+# 設定 rsyslog 記錄 auth/authpriv/daemon
 if [ $flag_177 -eq 0 ]; then
     gcb_rsyslog="/etc/rsyslog.d/50-gcb.conf"
     if ! grep -rqsE 'auth\.\*.*authpriv\.\*|authpriv\.\*.*auth\.\*' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null; then
@@ -2906,7 +2988,9 @@ if [ $flag_177 -eq 0 ]; then
     fi
     set_flag flag_177 1
 fi
-# 0178 - 修正 /var/log/messages 所有權
+# ======================================
+# TWGCB-01-008-0178
+# 修正 /var/log/messages 所有權
 if [ "${flag_178:-2}" -eq 0 ]; then
     if [ -f /var/log/messages ]; then
         if chown root:root /var/log/messages; then
@@ -2918,7 +3002,9 @@ if [ "${flag_178:-2}" -eq 0 ]; then
         fi
     fi
 fi
-# 0179 - 修正 /var/log 目錄所有權
+# ======================================
+# TWGCB-01-008-0179
+# 修正 /var/log 目錄所有權
 if [ $flag_179 -eq 0 ]; then
     if chown root:root /var/log; then
         set_flag flag_179 1
@@ -2928,7 +3014,9 @@ if [ $flag_179 -eq 0 ]; then
         log_append "[TWGCB-01-008-0179][ERROR] failed to chown /var/log"
     fi
 fi
-# 0180 - 設定 journald ForwardToSyslog
+# ======================================
+# TWGCB-01-008-0180
+# 設定 journald ForwardToSyslog
 if [ $flag_180 -eq 0 ]; then
     journald_conf="/etc/systemd/journald.conf"
     if grep -qsE '^\s*ForwardToSyslog\s*=' "$journald_conf" 2>/dev/null; then
@@ -2940,7 +3028,9 @@ if [ $flag_180 -eq 0 ]; then
     set_flag flag_180 1
     log_append "[TWGCB-01-008-0180][FIX] set ForwardToSyslog=yes in $journald_conf"
 fi
-# 0181 - 設定 journald 記錄檔壓縮
+# ======================================
+# TWGCB-01-008-0181
+# 設定 journald 記錄檔壓縮
 if [ $flag_181 -eq 0 ]; then
     journald_conf="/etc/systemd/journald.conf"
     if grep -qsE '^\s*Compress\s*=' "$journald_conf" 2>/dev/null; then
@@ -2952,7 +3042,9 @@ if [ $flag_181 -eq 0 ]; then
     set_flag flag_181 1
     log_append "[TWGCB-01-008-0181][FIX] set Compress=yes in $journald_conf"
 fi
-# 0182 - 設定 journald 持久化存儲
+# ======================================
+# TWGCB-01-008-0182
+# 設定 journald 持久化存儲
 if [ $flag_182 -eq 0 ]; then
     journald_conf="/etc/systemd/journald.conf"
     if grep -qsE '^\s*Storage\s*=' "$journald_conf" 2>/dev/null; then
@@ -2964,7 +3056,9 @@ if [ $flag_182 -eq 0 ]; then
     set_flag flag_182 1
     log_append "[TWGCB-01-008-0182][FIX] set Storage=persistent in $journald_conf"
 fi
-# 0185 - 安裝 libselinux 套件
+# ======================================
+# TWGCB-01-008-0185
+# 安裝 libselinux 套件
 if [ $flag_185 -eq 0 ]; then
     if dnf install -y libselinux 2>/dev/null; then
         set_flag flag_185 1
@@ -2974,7 +3068,9 @@ if [ $flag_185 -eq 0 ]; then
         log_append "[TWGCB-01-008-0185][ERROR] failed to install libselinux"
     fi
 fi
-# 0186 - 移除 GRUB 中的 SELinux 禁用參數
+# ======================================
+# TWGCB-01-008-0186
+# 移除 GRUB 中的 SELinux 禁用參數
 if [ $flag_186 -eq 0 ]; then
     grub_file="/etc/default/grub"
     if grep -qP '(selinux=0|enforcing=0)' "$grub_file" 2>/dev/null; then
@@ -2985,7 +3081,9 @@ if [ $flag_186 -eq 0 ]; then
     fi
     set_flag flag_186 1
 fi
-# 0187 - 設定 SELinux 框架為 targeted
+# ======================================
+# TWGCB-01-008-0187
+# 設定 SELinux 框架為 targeted
 if [ $flag_187 -eq 0 ]; then
     selinux_conf="/etc/selinux/config"
     if grep -qsE '^\s*SELINUXTYPE\s*=' "$selinux_conf" 2>/dev/null; then
@@ -2996,7 +3094,9 @@ if [ $flag_187 -eq 0 ]; then
     set_flag flag_187 1
     log_append "[TWGCB-01-008-0187][FIX] set SELINUXTYPE=targeted in $selinux_conf"
 fi
-# 0188 - 設定 SELinux 為 enforcing 模式
+# ======================================
+# TWGCB-01-008-0188
+# 設定 SELinux 為 enforcing 模式
 if [ $flag_188 -eq 0 ]; then
     selinux_conf="/etc/selinux/config"
     if grep -qsE '^\s*SELINUX\s*=' "$selinux_conf" 2>/dev/null; then
@@ -3008,7 +3108,9 @@ if [ $flag_188 -eq 0 ]; then
     set_flag flag_188 1
     log_append "[TWGCB-01-008-0188][FIX] set SELINUX=enforcing and applied setenforce 1"
 fi
-# 0190 - 移除 setroubleshoot 套件
+# ======================================
+# TWGCB-01-008-0190
+# 移除 setroubleshoot 套件
 if [ $flag_190 -eq 0 ]; then
     if dnf remove -y setroubleshoot 2>/dev/null; then
         set_flag flag_190 1
@@ -3018,7 +3120,9 @@ if [ $flag_190 -eq 0 ]; then
         log_append "[TWGCB-01-008-0190][ERROR] failed to remove setroubleshoot"
     fi
 fi
-# 0191 - 移除 mcstrans 套件
+# ======================================
+# TWGCB-01-008-0191
+# 移除 mcstrans 套件
 if [ $flag_191 -eq 0 ]; then
     if dnf remove -y mcstrans 2>/dev/null; then
         set_flag flag_191 1
@@ -3028,7 +3132,9 @@ if [ $flag_191 -eq 0 ]; then
         log_append "[TWGCB-01-008-0191][ERROR] failed to remove mcstrans"
     fi
 fi
-# 0192 - 啟用 crond 服務
+# ======================================
+# TWGCB-01-008-0192
+# 啟用 crond 服務
 if [ $flag_192 -eq 0 ]; then
     if systemctl --now enable crond 2>/dev/null; then
         set_flag flag_192 1
@@ -3038,7 +3144,9 @@ if [ $flag_192 -eq 0 ]; then
         log_append "[TWGCB-01-008-0192][ERROR] failed to enable crond"
     fi
 fi
-# 0193 - 修正 /etc/crontab 所有權
+# ======================================
+# TWGCB-01-008-0193
+# 修正 /etc/crontab 所有權
 if [ $flag_193 -eq 0 ]; then
     if chown root:root /etc/crontab; then
         set_flag flag_193 1
@@ -3048,7 +3156,9 @@ if [ $flag_193 -eq 0 ]; then
         log_append "[TWGCB-01-008-0193][ERROR] failed to chown /etc/crontab"
     fi
 fi
-# 0194 - 修正 /etc/crontab 權限
+# ======================================
+# TWGCB-01-008-0194
+# 修正 /etc/crontab 權限
 if [ $flag_194 -eq 0 ]; then
     if chmod 600 /etc/crontab; then
         set_flag flag_194 1
@@ -3058,7 +3168,9 @@ if [ $flag_194 -eq 0 ]; then
         log_append "[TWGCB-01-008-0194][ERROR] failed to chmod /etc/crontab"
     fi
 fi
-# 0195 - 修正 /etc/cron.hourly 所有權
+# ======================================
+# TWGCB-01-008-0195
+# 修正 /etc/cron.hourly 所有權
 if [ $flag_195 -eq 0 ]; then
     if chown root:root /etc/cron.hourly; then
         set_flag flag_195 1
@@ -3068,7 +3180,9 @@ if [ $flag_195 -eq 0 ]; then
         log_append "[TWGCB-01-008-0195][ERROR] failed to chown /etc/cron.hourly"
     fi
 fi
-# 0196 - 修正 /etc/cron.hourly 權限
+# ======================================
+# TWGCB-01-008-0196
+# 修正 /etc/cron.hourly 權限
 if [ $flag_196 -eq 0 ]; then
     if chmod 700 /etc/cron.hourly; then
         set_flag flag_196 1
@@ -3078,7 +3192,9 @@ if [ $flag_196 -eq 0 ]; then
         log_append "[TWGCB-01-008-0196][ERROR] failed to chmod /etc/cron.hourly"
     fi
 fi
-# 0197 - 修正 /etc/cron.daily 所有權
+# ======================================
+# TWGCB-01-008-0197
+# 修正 /etc/cron.daily 所有權
 if [ $flag_197 -eq 0 ]; then
     if chown root:root /etc/cron.daily; then
         set_flag flag_197 1
@@ -3088,7 +3204,9 @@ if [ $flag_197 -eq 0 ]; then
         log_append "[TWGCB-01-008-0197][ERROR] failed to chown /etc/cron.daily"
     fi
 fi
-# 0198 - 修正 /etc/cron.daily 權限
+# ======================================
+# TWGCB-01-008-0198
+# 修正 /etc/cron.daily 權限
 if [ $flag_198 -eq 0 ]; then
     if chmod 700 /etc/cron.daily; then
         set_flag flag_198 1
@@ -3098,7 +3216,9 @@ if [ $flag_198 -eq 0 ]; then
         log_append "[TWGCB-01-008-0198][ERROR] failed to chmod /etc/cron.daily"
     fi
 fi
-# 0199 - 修正 /etc/cron.weekly 所有權
+# ======================================
+# TWGCB-01-008-0199
+# 修正 /etc/cron.weekly 所有權
 if [ $flag_199 -eq 0 ]; then
     if chown root:root /etc/cron.weekly; then
         set_flag flag_199 1
@@ -3108,7 +3228,9 @@ if [ $flag_199 -eq 0 ]; then
         log_append "[TWGCB-01-008-0199][ERROR] failed to chown /etc/cron.weekly"
     fi
 fi
-# 0200 - 修正 /etc/cron.weekly 權限
+# ======================================
+# TWGCB-01-008-0200
+# 修正 /etc/cron.weekly 權限
 if [ $flag_200 -eq 0 ]; then
     if chmod 700 /etc/cron.weekly; then
         set_flag flag_200 1
@@ -3118,7 +3240,9 @@ if [ $flag_200 -eq 0 ]; then
         log_append "[TWGCB-01-008-0200][ERROR] failed to chmod /etc/cron.weekly"
     fi
 fi
-# 0201 - 修正 /etc/cron.monthly 所有權
+# ======================================
+# TWGCB-01-008-0201
+# 修正 /etc/cron.monthly 所有權
 if [ $flag_201 -eq 0 ]; then
     if chown root:root /etc/cron.monthly; then
         set_flag flag_201 1
@@ -3128,7 +3252,9 @@ if [ $flag_201 -eq 0 ]; then
         log_append "[TWGCB-01-008-0201][ERROR] failed to chown /etc/cron.monthly"
     fi
 fi
-# 0202 - 修正 /etc/cron.monthly 權限
+# ======================================
+# TWGCB-01-008-0202
+# 修正 /etc/cron.monthly 權限
 if [ $flag_202 -eq 0 ]; then
     if chmod 700 /etc/cron.monthly; then
         set_flag flag_202 1
@@ -3138,7 +3264,9 @@ if [ $flag_202 -eq 0 ]; then
         log_append "[TWGCB-01-008-0202][ERROR] failed to chmod /etc/cron.monthly"
     fi
 fi
-# 0203 - 修正 /etc/cron.d 所有權
+# ======================================
+# TWGCB-01-008-0203
+# 修正 /etc/cron.d 所有權
 if [ $flag_203 -eq 0 ]; then
     if chown root:root /etc/cron.d; then
         set_flag flag_203 1
@@ -3148,7 +3276,9 @@ if [ $flag_203 -eq 0 ]; then
         log_append "[TWGCB-01-008-0203][ERROR] failed to chown /etc/cron.d"
     fi
 fi
-# 0204 - 修正 /etc/cron.d 權限
+# ======================================
+# TWGCB-01-008-0204
+# 修正 /etc/cron.d 權限
 if [ $flag_204 -eq 0 ]; then
     if chmod 700 /etc/cron.d; then
         set_flag flag_204 1
@@ -3158,7 +3288,9 @@ if [ $flag_204 -eq 0 ]; then
         log_append "[TWGCB-01-008-0204][ERROR] failed to chmod /etc/cron.d"
     fi
 fi
-# 0205 - 設定 cron.allow/at.allow 所有權
+# ======================================
+# TWGCB-01-008-0205
+# 設定 cron.allow/at.allow 所有權
 if [ $flag_205 -eq 0 ]; then
     rm -f /etc/cron.deny /etc/at.deny
     touch /etc/cron.allow /etc/at.allow
@@ -3166,14 +3298,18 @@ if [ $flag_205 -eq 0 ]; then
     set_flag flag_205 1
     log_append "[TWGCB-01-008-0205][FIX] removed cron.deny/at.deny, created cron.allow/at.allow with root ownership"
 fi
-# 0206 - 設定 cron.allow/at.allow 權限
+# ======================================
+# TWGCB-01-008-0206
+# 設定 cron.allow/at.allow 權限
 if [ $flag_206 -eq 0 ]; then
     touch /etc/cron.allow /etc/at.allow
     chmod 600 /etc/cron.allow /etc/at.allow
     set_flag flag_206 1
     log_append "[TWGCB-01-008-0206][FIX] set permissions of cron.allow and at.allow to 600"
 fi
-# 0207 - 設定 rsyslog cron 日誌記錄
+# ======================================
+# TWGCB-01-008-0207
+# 設定 rsyslog cron 日誌記錄
 if [ $flag_207 -eq 0 ]; then
     gcb_rsyslog="/etc/rsyslog.d/50-gcb.conf"
     mkdir -p /etc/rsyslog.d
@@ -3184,7 +3320,9 @@ if [ $flag_207 -eq 0 ]; then
     fi
     set_flag flag_207 1
 fi
-# 0208 - 設定 PAM 密碼重試次數 retry=3
+# ======================================
+# TWGCB-01-008-0208
+# 設定 PAM 密碼重試次數 retry=3
 if [ $flag_208 -eq 0 ]; then
     pwq_conf="/etc/security/pwquality.conf"
     if grep -qiE '^\s*[Rr]etry\s*=' "$pwq_conf" 2>/dev/null; then
@@ -3195,7 +3333,9 @@ if [ $flag_208 -eq 0 ]; then
     set_flag flag_208 1
     log_append "[TWGCB-01-008-0208][FIX] set Retry=3 in $pwq_conf"
 fi
-# 0209 - 設定 PAM enforce_for_root
+# ======================================
+# TWGCB-01-008-0209
+# 設定 PAM enforce_for_root
 if [ $flag_209 -eq 0 ]; then
     CP=$(authselect current 2>/dev/null | awk 'NR == 1 {print $3}' | grep custom/)
     for FN in system-auth password-auth; do
@@ -3210,7 +3350,9 @@ if [ $flag_209 -eq 0 ]; then
     authselect apply-changes 2>/dev/null
     set_flag flag_209 1
 fi
-# 0210 - 設定密碼最小長度 minlen=12
+# ======================================
+# TWGCB-01-008-0210
+# 設定密碼最小長度 minlen=12
 if [ $flag_210 -eq 0 ]; then
     pwq_conf="/etc/security/pwquality.conf"
     if grep -qiE '^\s*minlen\s*=' "$pwq_conf" 2>/dev/null; then
@@ -3226,7 +3368,9 @@ if [ $flag_210 -eq 0 ]; then
     set_flag flag_210 1
     log_append "[TWGCB-01-008-0210][FIX] set minlen=12 in pwquality.conf and PASS_MIN_LEN=12 in login.defs"
 fi
-# 0211 - 設定密碼字元類別要求 minclass=4
+# ======================================
+# TWGCB-01-008-0211
+# 設定密碼字元類別要求 minclass=4
 if [ $flag_211 -eq 0 ]; then
     pwq_conf="/etc/security/pwquality.conf"
     if grep -qiE '^\s*minclass\s*=' "$pwq_conf" 2>/dev/null; then
@@ -3237,7 +3381,9 @@ if [ $flag_211 -eq 0 ]; then
     set_flag flag_211 1
     log_append "[TWGCB-01-008-0211][FIX] set minclass=4 in $pwq_conf"
 fi
-# 0212 - 設定密碼須含數字 dcredit=-1
+# ======================================
+# TWGCB-01-008-0212
+# 設定密碼須含數字 dcredit=-1
 if [ $flag_212 -eq 0 ]; then
     pwq_conf="/etc/security/pwquality.conf"
     if grep -qiE '^\s*dcredit\s*=' "$pwq_conf" 2>/dev/null; then

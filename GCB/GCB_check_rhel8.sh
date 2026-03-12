@@ -1345,7 +1345,7 @@ while IFS=: read -r username _ _ _ _ home shell; do
     if [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
         continue
     fi
-    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/usr/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
         continue
     fi
     if [ -z "$home" ] || [ "$home" = "/" ]; then
@@ -1376,7 +1376,7 @@ while IFS=: read -r username _ _ _ _ home shell; do
     if [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
         continue
     fi
-    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/usr/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
         continue
     fi
     if [ -z "$home" ] || [ "$home" = "/" ]; then
@@ -1407,7 +1407,7 @@ while IFS=: read -r username _ uid gid _ home shell; do
     if [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
         continue
     fi
-    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/usr/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
         continue
     fi
     if [ -z "$home" ] || [ "$home" = "/" ]; then
@@ -1437,7 +1437,7 @@ while IFS=: read -r username _ _ _ _ home shell; do
     if [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
         continue
     fi
-    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/usr/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
         continue
     fi
     if [ -z "$home" ] || [ "$home" = "/" ]; then
@@ -1474,7 +1474,7 @@ while IFS=: read -r username _ _ _ _ home shell; do
     if [ "$username" = "root" ] || [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
         continue
     fi
-    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/usr/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
         continue
     fi
     if [ -z "$home" ] || [ "$home" = "/" ]; then
@@ -1502,7 +1502,7 @@ while IFS=: read -r username _ _ _ _ home shell; do
     if [ "$username" = "root" ] || [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
         continue
     fi
-    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/usr/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
         continue
     fi
     if [ -z "$home" ] || [ "$home" = "/" ]; then
@@ -1530,7 +1530,7 @@ while IFS=: read -r username _ _ _ _ home shell; do
     if [ "$username" = "root" ] || [ "$username" = "halt" ] || [ "$username" = "sync" ] || [ "$username" = "shutdown" ]; then
         continue
     fi
-    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
+    if [ "$shell" = "/sbin/nologin" ] || [ "$shell" = "/usr/sbin/nologin" ] || [ "$shell" = "/bin/false" ]; then
         continue
     fi
     if [ -z "$home" ] || [ "$home" = "/" ]; then
@@ -3331,8 +3331,1048 @@ else
     log_append "[TWGCB-01-008-0212][FAIL] pwquality dcredit is not set to -1 or less"
     set_flag flag_212 0
 fi
+# ======================================
+# TWGCB-01-008-0213
+# 密碼須含大寫字母（ucredit=-1）
+if grep -qsE '^\s*ucredit\s*=\s*-[1-9]' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0213][PASS] pwquality ucredit is set (require at least 1 uppercase)"
+    set_flag flag_213 1
+else
+    log_append "[TWGCB-01-008-0213][FAIL] pwquality ucredit is not set to -1 or less"
+    set_flag flag_213 0
+fi
+# ======================================
+# TWGCB-01-008-0214
+# 密碼須含小寫字母（lcredit=-1）
+if grep -qsE '^\s*lcredit\s*=\s*-[1-9]' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0214][PASS] pwquality lcredit is set (require at least 1 lowercase)"
+    set_flag flag_214 1
+else
+    log_append "[TWGCB-01-008-0214][FAIL] pwquality lcredit is not set to -1 or less"
+    set_flag flag_214 0
+fi
+# ======================================
+# TWGCB-01-008-0215
+# 密碼須含特殊字元（ocredit=-1）
+if grep -qsE '^\s*ocredit\s*=\s*-[1-9]' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0215][PASS] pwquality ocredit is set (require at least 1 special char)"
+    set_flag flag_215 1
+else
+    log_append "[TWGCB-01-008-0215][FAIL] pwquality ocredit is not set to -1 or less"
+    set_flag flag_215 0
+fi
+# ======================================
+# TWGCB-01-008-0216
+# 密碼與舊密碼差異字元數（difok=3）
+if grep -qsE '^\s*difok\s*=\s*[3-9]' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0216][PASS] pwquality difok >= 3"
+    set_flag flag_216 1
+else
+    log_append "[TWGCB-01-008-0216][FAIL] pwquality difok is not set to 3 or more"
+    set_flag flag_216 0
+fi
+# ======================================
+# TWGCB-01-008-0217
+# 密碼相同字元類別連續出現次數限制（maxclassrepeat=4）
+if grep -qsE '^\s*maxclassrepeat\s*=\s*[1-4]' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0217][PASS] pwquality maxclassrepeat <= 4"
+    set_flag flag_217 1
+else
+    log_append "[TWGCB-01-008-0217][FAIL] pwquality maxclassrepeat is not set to 4 or less"
+    set_flag flag_217 0
+fi
+# ======================================
+# TWGCB-01-008-0218
+# 密碼相同字元連續出現次數限制（maxrepeat=3）
+if grep -qsE '^\s*maxrepeat\s*=\s*[1-3]' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0218][PASS] pwquality maxrepeat <= 3"
+    set_flag flag_218 1
+else
+    log_append "[TWGCB-01-008-0218][FAIL] pwquality maxrepeat is not set to 3 or less"
+    set_flag flag_218 0
+fi
+# ======================================
+# TWGCB-01-008-0219
+# 密碼字典檢查（dictcheck=1）
+if grep -qsE '^\s*dictcheck\s*=\s*1' /etc/security/pwquality.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0219][PASS] pwquality dictcheck=1 is configured"
+    set_flag flag_219 1
+else
+    log_append "[TWGCB-01-008-0219][FAIL] pwquality dictcheck=1 is not configured"
+    set_flag flag_219 0
+fi
+# ======================================
+# TWGCB-01-008-0220
+# 帳號鎖定嘗試次數（deny=5）
+flock220_fail=0
+if grep -qsE '^\s*deny\s*=\s*[1-5]' /etc/security/faillock.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0220][PASS] faillock deny <= 5 in faillock.conf"
+elif grep -rqsE 'pam_faillock\.so.*deny=[1-5]' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null; then
+    log_append "[TWGCB-01-008-0220][PASS] faillock deny <= 5 in PAM files"
+else
+    log_append "[TWGCB-01-008-0220][FAIL] faillock deny is not set to 5 or less"
+    flock220_fail=1
+fi
+if [ $flock220_fail -eq 0 ]; then set_flag flag_220 1; else set_flag flag_220 0; fi
+# ======================================
+# TWGCB-01-008-0221
+# 帳號鎖定解鎖時間（unlock_time=900）
+flock221_fail=0
+if grep -qsE '^\s*unlock_time\s*=\s*(9[0-9][0-9]|[1-9][0-9]{3,})' /etc/security/faillock.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0221][PASS] faillock unlock_time >= 900 in faillock.conf"
+elif grep -rqsE 'pam_faillock\.so.*unlock_time=(9[0-9][0-9]|[1-9][0-9]{3,})' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null; then
+    log_append "[TWGCB-01-008-0221][PASS] faillock unlock_time >= 900 in PAM files"
+else
+    log_append "[TWGCB-01-008-0221][FAIL] faillock unlock_time is not set to 900 or more"
+    flock221_fail=1
+fi
+if [ $flock221_fail -eq 0 ]; then set_flag flag_221 1; else set_flag flag_221 0; fi
+# ======================================
+# TWGCB-01-008-0222
+# 禁止重複使用舊密碼（remember=3）
+pam222_fail=0
+for f in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
+    [ ! -f "$f" ] && continue
+    if grep -qE '^\s*password\s+.*(pam_unix|pam_pwhistory)\.so.*remember=[3-9]' "$f" 2>/dev/null; then
+        log_append "[TWGCB-01-008-0222][PASS] password remember >= 3 in $f"
+    else
+        log_append "[TWGCB-01-008-0222][FAIL] password remember is not set to 3 or more in $f"
+        pam222_fail=1
+    fi
+done
+if [ $pam222_fail -eq 0 ]; then set_flag flag_222 1; else set_flag flag_222 0; fi
+# ======================================
+# TWGCB-01-008-0223
+# 顯示上次登入失敗資訊（pam_lastlog showfailed）
+pam223_found=0
+for f in /etc/pam.d/system-auth /etc/pam.d/login /etc/pam.d/sshd; do
+    [ ! -f "$f" ] && continue
+    if grep -qE '^\s*session\s+required\s+pam_lastlog\.so.*showfailed' "$f" 2>/dev/null; then
+        log_append "[TWGCB-01-008-0223][PASS] pam_lastlog showfailed configured in $f"
+        pam223_found=1
+        break
+    fi
+done
+if [ $pam223_found -eq 1 ]; then set_flag flag_223 1; else
+    log_append "[TWGCB-01-008-0223][FAIL] pam_lastlog showfailed not configured"
+    set_flag flag_223 0
+fi
+# ======================================
+# TWGCB-01-008-0224
+# 密碼加密方式使用 SHA512
+pw224_fail=0
+if grep -qsE '^\s*crypt_style\s*=\s*sha512' /etc/libuser.conf 2>/dev/null; then
+    log_append "[TWGCB-01-008-0224][PASS] libuser.conf crypt_style=sha512"
+else
+    log_append "[TWGCB-01-008-0224][FAIL] libuser.conf crypt_style=sha512 not set"
+    pw224_fail=1
+fi
+if grep -qsE '^\s*ENCRYPT_METHOD\s+SHA512' /etc/login.defs 2>/dev/null; then
+    log_append "[TWGCB-01-008-0224][PASS] login.defs ENCRYPT_METHOD=SHA512"
+else
+    log_append "[TWGCB-01-008-0224][FAIL] login.defs ENCRYPT_METHOD=SHA512 not set"
+    pw224_fail=1
+fi
+if [ $pw224_fail -eq 0 ]; then set_flag flag_224 1; else set_flag flag_224 0; fi
+# ======================================
+# TWGCB-01-008-0225
+# 密碼最短使用天數（PASS_MIN_DAYS=1）
+if grep -qsE '^\s*PASS_MIN_DAYS\s+[1-9]' /etc/login.defs 2>/dev/null; then
+    log_append "[TWGCB-01-008-0225][PASS] login.defs PASS_MIN_DAYS >= 1"
+    set_flag flag_225 1
+else
+    log_append "[TWGCB-01-008-0225][FAIL] login.defs PASS_MIN_DAYS is not set to 1 or more"
+    set_flag flag_225 0
+fi
+# ======================================
+# TWGCB-01-008-0226
+# 密碼到期前警告天數（PASS_WARN_AGE=14）
+if grep -qsE '^\s*PASS_WARN_AGE\s+(1[4-9]|[2-9][0-9])' /etc/login.defs 2>/dev/null; then
+    log_append "[TWGCB-01-008-0226][PASS] login.defs PASS_WARN_AGE >= 14"
+    set_flag flag_226 1
+else
+    log_append "[TWGCB-01-008-0226][FAIL] login.defs PASS_WARN_AGE is not set to 14 or more"
+    set_flag flag_226 0
+fi
+# ======================================
+# TWGCB-01-008-0227
+# 密碼最長使用天數（PASS_MAX_DAYS<=90）
+max_days=$(grep -sE '^\s*PASS_MAX_DAYS\s+' /etc/login.defs 2>/dev/null | awk '{print $2}')
+if [ -n "$max_days" ] && [ "$max_days" -le 90 ] 2>/dev/null; then
+    log_append "[TWGCB-01-008-0227][PASS] login.defs PASS_MAX_DAYS=$max_days (<= 90)"
+    set_flag flag_227 1
+else
+    log_append "[TWGCB-01-008-0227][FAIL] login.defs PASS_MAX_DAYS is not set to 90 or less (current: ${max_days:-not set})"
+    set_flag flag_227 0
+fi
+# ======================================
+# TWGCB-01-008-0228
+# 停用閒置帳號（inactive=30）
+inactive_val=$(useradd -D 2>/dev/null | grep INACTIVE | cut -d= -f2)
+if [ -n "$inactive_val" ] && [ "$inactive_val" -le 30 ] && [ "$inactive_val" -ge 1 ] 2>/dev/null; then
+    log_append "[TWGCB-01-008-0228][PASS] useradd default INACTIVE=$inactive_val (<= 30)"
+    set_flag flag_228 1
+else
+    log_append "[TWGCB-01-008-0228][FAIL] useradd default INACTIVE is not set to 30 or less (current: ${inactive_val:-not set})"
+    set_flag flag_228 0
+fi
+# ======================================
+# TWGCB-01-008-0229
+# 登入失敗延遲時間（FAIL_DELAY>=4）
+fail_delay=$(grep -sE '^\s*FAIL_DELAY\s+' /etc/login.defs 2>/dev/null | awk '{print $2}')
+if [ -n "$fail_delay" ] && [ "$fail_delay" -ge 4 ] 2>/dev/null; then
+    log_append "[TWGCB-01-008-0229][PASS] login.defs FAIL_DELAY=$fail_delay (>= 4)"
+    set_flag flag_229 1
+else
+    log_append "[TWGCB-01-008-0229][FAIL] login.defs FAIL_DELAY is not set to 4 or more (current: ${fail_delay:-not set})"
+    set_flag flag_229 0
+fi
+# ======================================
+# TWGCB-01-008-0230
+# 建立帳號時自動建立家目錄（CREATE_HOME=yes）
+if grep -qsE '^\s*CREATE_HOME\s+yes' /etc/login.defs 2>/dev/null; then
+    log_append "[TWGCB-01-008-0230][PASS] login.defs CREATE_HOME=yes"
+    set_flag flag_230 1
+else
+    log_append "[TWGCB-01-008-0230][FAIL] login.defs CREATE_HOME=yes is not set"
+    set_flag flag_230 0
+fi
+# ======================================
+# TWGCB-01-008-0231
+# sudoers 中不含 NOPASSWD 或 !authenticate
+sudo231_fail=0
+if grep -rsiE '(NOPASSWD|!authenticate)' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | grep -vE '^\s*#' | grep -q .; then
+    log_append "[TWGCB-01-008-0231][FAIL] NOPASSWD or !authenticate found in sudoers (manual remediation required)"
+    sudo231_fail=1
+else
+    log_append "[TWGCB-01-008-0231][PASS] no NOPASSWD or !authenticate in sudoers"
+fi
+if [ $sudo231_fail -eq 0 ]; then set_flag flag_231 1; else set_flag flag_231 0; fi
+# ======================================
+# TWGCB-01-008-0232
+# 限制最大同時登入會話數（maxlogins=10）
+if grep -rqsE '^\s*\*\s+hard\s+maxlogins\s+([1-9]|10)\b' /etc/security/limits.conf /etc/security/limits.d/ 2>/dev/null; then
+    log_append "[TWGCB-01-008-0232][PASS] limits maxlogins <= 10 is configured"
+    set_flag flag_232 1
+else
+    log_append "[TWGCB-01-008-0232][FAIL] limits maxlogins is not configured to 10 or less"
+    set_flag flag_232 0
+fi
+# ======================================
+# TWGCB-01-008-0233
+# kbd 套件安裝
+if rpm -q kbd &>/dev/null; then
+    log_append "[TWGCB-01-008-0233][PASS] kbd package is installed"
+    set_flag flag_233 1
+else
+    log_append "[TWGCB-01-008-0233][FAIL] kbd package is not installed"
+    set_flag flag_233 0
+fi
+# ======================================
+# TWGCB-01-008-0234
+# GNOME 螢幕保護啟用鎖定
+if command -v dconf &>/dev/null; then
+    if grep -rqsE '^\s*lock-enabled\s*=\s*true' /etc/dconf/db/ 2>/dev/null; then
+        log_append "[TWGCB-01-008-0234][PASS] GNOME screensaver lock-enabled=true"
+        set_flag flag_234 1
+    else
+        log_append "[TWGCB-01-008-0234][FAIL] GNOME screensaver lock-enabled=true not configured"
+        set_flag flag_234 0
+    fi
+else
+    log_append "[TWGCB-01-008-0234][SKIP] dconf not installed (GNOME not present)"
+    set_flag flag_234 2
+fi
+# ======================================
+# TWGCB-01-008-0235
+# GNOME 閒置逾時設定（idle-delay=900）
+if command -v dconf &>/dev/null; then
+    if grep -rqsE '^\s*idle-delay\s*=\s*uint32\s+[89][0-9][0-9]|idle-delay\s*=\s*uint32\s+[1-9][0-9]{3,}' /etc/dconf/db/ 2>/dev/null; then
+        log_append "[TWGCB-01-008-0235][PASS] GNOME idle-delay >= 900 configured"
+        set_flag flag_235 1
+    else
+        log_append "[TWGCB-01-008-0235][FAIL] GNOME idle-delay is not set to 900 or more"
+        set_flag flag_235 0
+    fi
+else
+    log_append "[TWGCB-01-008-0235][SKIP] dconf not installed (GNOME not present)"
+    set_flag flag_235 2
+fi
+# ======================================
+# TWGCB-01-008-0236
+# GDM 停用自動登入
+if [ -f /etc/gdm/custom.conf ]; then
+    if grep -qsE '^\s*AutomaticLoginEnable\s*=\s*[Ff]alse' /etc/gdm/custom.conf 2>/dev/null; then
+        log_append "[TWGCB-01-008-0236][PASS] GDM AutomaticLoginEnable=false"
+        set_flag flag_236 1
+    else
+        log_append "[TWGCB-01-008-0236][FAIL] GDM AutomaticLoginEnable is not set to false"
+        set_flag flag_236 0
+    fi
+else
+    log_append "[TWGCB-01-008-0236][SKIP] /etc/gdm/custom.conf not found (GDM not installed)"
+    set_flag flag_236 2
+fi
+# ======================================
+# TWGCB-01-008-0237
+# 系統帳號使用 nologin 並鎖定
+uid_min=$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs 2>/dev/null)
+uid_min="${uid_min:-1000}"
+nologin_path=$(which nologin 2>/dev/null || echo "/sbin/nologin")
+sys237_fail=0
+while IFS=: read -r user _ uid _ _ _ shell; do
+    [ "$user" = "root" ] || [ "$user" = "sync" ] || [ "$user" = "shutdown" ] || [ "$user" = "halt" ] && continue
+    [[ "$user" =~ ^\+ ]] && continue
+    [ "$uid" -ge "$uid_min" ] 2>/dev/null && continue
+    if [ "$shell" != "$nologin_path" ] && [ "$shell" != "/bin/false" ] && [ "$shell" != "/usr/sbin/nologin" ]; then
+        log_append "[TWGCB-01-008-0237][FAIL] system account $user has login shell: $shell"
+        sys237_fail=1
+    fi
+done < /etc/passwd
+if [ $sys237_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0237][PASS] all system accounts use nologin or /bin/false"
+    set_flag flag_237 1
+else
+    set_flag flag_237 0
+fi
+# ======================================
+# TWGCB-01-008-0238
+# 終端機閒置自動登出（TMOUT=900）
+if grep -rqsE '^\s*readonly\s+TMOUT\s*=\s*(9[0-9][0-9]|[1-9][0-9]{3,})' /etc/profile /etc/profile.d/ 2>/dev/null || \
+   grep -rqsE '^\s*TMOUT\s*=\s*(9[0-9][0-9]|[1-9][0-9]{3,})' /etc/profile /etc/profile.d/ 2>/dev/null; then
+    log_append "[TWGCB-01-008-0238][PASS] TMOUT >= 900 configured in profile"
+    set_flag flag_238 1
+else
+    log_append "[TWGCB-01-008-0238][FAIL] TMOUT >= 900 not configured in /etc/profile or /etc/profile.d/"
+    set_flag flag_238 0
+fi
+# ======================================
+# TWGCB-01-008-0239
+# GNOME dconf 鎖定螢幕保護設定
+if command -v dconf &>/dev/null; then
+    if grep -rqsF '/org/gnome/desktop/session/idle-delay' /etc/dconf/db/ 2>/dev/null; then
+        log_append "[TWGCB-01-008-0239][PASS] GNOME dconf locks for screensaver configured"
+        set_flag flag_239 1
+    else
+        log_append "[TWGCB-01-008-0239][FAIL] GNOME dconf locks for screensaver not configured"
+        set_flag flag_239 0
+    fi
+else
+    log_append "[TWGCB-01-008-0239][SKIP] dconf not installed (GNOME not present)"
+    set_flag flag_239 2
+fi
+# ======================================
+# TWGCB-01-008-0240
+# root 帳號主要群組為 GID 0
+root_gid=$(id -g root 2>/dev/null)
+if [ "$root_gid" = "0" ]; then
+    log_append "[TWGCB-01-008-0240][PASS] root primary group is GID 0"
+    set_flag flag_240 1
+else
+    log_append "[TWGCB-01-008-0240][FAIL] root primary group is GID $root_gid (expected 0)"
+    set_flag flag_240 0
+fi
+# ======================================
+# TWGCB-01-008-0241
+# 預設 umask 設定為 027
+umask241_fail=0
+if grep -rqsE '^\s*umask\s+0?27\b' /etc/profile /etc/profile.d/ /etc/bashrc 2>/dev/null; then
+    log_append "[TWGCB-01-008-0241][PASS] umask 027 configured in profile files"
+else
+    log_append "[TWGCB-01-008-0241][FAIL] umask 027 not configured in /etc/profile or /etc/bashrc"
+    umask241_fail=1
+fi
+if [ $umask241_fail -eq 0 ]; then set_flag flag_241 1; else set_flag flag_241 0; fi
+# ======================================
+# TWGCB-01-008-0242
+# login.defs UMASK 設定為 027
+if grep -qsE '^\s*UMASK\s+0?27\b' /etc/login.defs 2>/dev/null; then
+    log_append "[TWGCB-01-008-0242][PASS] login.defs UMASK=027"
+    set_flag flag_242 1
+else
+    log_append "[TWGCB-01-008-0242][FAIL] login.defs UMASK is not set to 027"
+    set_flag flag_242 0
+fi
+
+# ======================================
+# TWGCB-01-008-0243
+# su 指令使用者限制 (pam_wheel.so use_uid)
+if grep -qsE '^\s*auth\s+required\s+pam_wheel\.so\s+use_uid' /etc/pam.d/su 2>/dev/null; then
+    log_append "[TWGCB-01-008-0243][PASS] /etc/pam.d/su has auth required pam_wheel.so use_uid"
+    set_flag flag_243 1
+else
+    log_append "[TWGCB-01-008-0243][FAIL] /etc/pam.d/su missing auth required pam_wheel.so use_uid"
+    set_flag flag_243 0
+fi
+# ======================================
+# TWGCB-01-008-0244
+# firewalld 套件安裝
+if rpm -q firewalld &>/dev/null; then
+    log_append "[TWGCB-01-008-0244][PASS] firewalld is installed"
+    set_flag flag_244 1
+else
+    log_append "[TWGCB-01-008-0244][FAIL] firewalld is not installed"
+    set_flag flag_244 0
+fi
+# ======================================
+# TWGCB-01-008-0245
+# firewalld 服務啟用
+if systemctl is-enabled firewalld 2>/dev/null | grep -q '^enabled$'; then
+    log_append "[TWGCB-01-008-0245][PASS] firewalld service is enabled"
+    set_flag flag_245 1
+else
+    log_append "[TWGCB-01-008-0245][FAIL] firewalld service is not enabled"
+    set_flag flag_245 0
+fi
+# ======================================
+# TWGCB-01-008-0246
+# iptables/ip6tables 服務停用 (when using firewalld)
+if [ $flag_244 -ne 1 ]; then
+    log_append "[TWGCB-01-008-0246][SKIP] firewalld not installed; skipping iptables check"
+    set_flag flag_246 2
+else
+    ipt246_fail=0
+    for svc in iptables ip6tables; do
+        if systemctl is-enabled "$svc" > /dev/null 2>&1; then
+            log_append "[TWGCB-01-008-0246][FAIL] $svc is enabled (should be masked when using firewalld)"
+            ipt246_fail=1
+        fi
+    done
+    if [ $ipt246_fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0246][PASS] iptables and ip6tables are disabled/masked"
+        set_flag flag_246 1
+    else
+        set_flag flag_246 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0247
+# nftables 服務停用 (when using firewalld)
+if [ $flag_244 -ne 1 ]; then
+    log_append "[TWGCB-01-008-0247][SKIP] firewalld not installed; skipping nftables-disable check"
+    set_flag flag_247 2
+else
+    if systemctl is-enabled nftables > /dev/null 2>&1; then
+        log_append "[TWGCB-01-008-0247][FAIL] nftables is enabled (should be masked when using firewalld)"
+        set_flag flag_247 0
+    else
+        log_append "[TWGCB-01-008-0247][PASS] nftables is disabled/masked"
+        set_flag flag_247 1
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0248
+# firewalld 設定預設區域
+if [ $flag_244 -ne 1 ]; then
+    log_append "[TWGCB-01-008-0248][SKIP] firewalld not installed"
+    set_flag flag_248 2
+else
+    default_zone=$(firewall-cmd --get-default-zone 2>/dev/null)
+    if [ -n "$default_zone" ]; then
+        log_append "[TWGCB-01-008-0248][PASS] firewalld default zone is: $default_zone"
+        set_flag flag_248 1
+    else
+        log_append "[TWGCB-01-008-0248][FAIL] firewalld default zone is not set"
+        set_flag flag_248 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0249
+# nftables 服務啟用 (when using nftables instead of firewalld)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0249][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_249 2
+else
+    if systemctl is-enabled nftables 2>/dev/null | grep -q '^enabled$'; then
+        log_append "[TWGCB-01-008-0249][PASS] nftables service is enabled"
+        set_flag flag_249 1
+    else
+        log_append "[TWGCB-01-008-0249][FAIL] nftables service is not enabled"
+        set_flag flag_249 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0250
+# firewalld 服務停用 (when using nftables)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0250][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_250 2
+else
+    if systemctl is-enabled firewalld > /dev/null 2>&1; then
+        log_append "[TWGCB-01-008-0250][FAIL] firewalld is enabled (should be masked when using nftables)"
+        set_flag flag_250 0
+    else
+        log_append "[TWGCB-01-008-0250][PASS] firewalld is disabled/masked"
+        set_flag flag_250 1
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0251
+# 在 nftables 建立表 (at least 1 table)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0251][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_251 2
+else
+    if nft list tables 2>/dev/null | grep -q .; then
+        log_append "[TWGCB-01-008-0251][PASS] nftables has at least 1 table configured"
+        set_flag flag_251 1
+    else
+        log_append "[TWGCB-01-008-0251][FAIL] nftables has no tables configured"
+        set_flag flag_251 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0252
+# 在 nftables 建立基礎鏈 (input, forward, output base chains)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0252][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_252 2
+else
+    nft252_fail=0
+    for hook in input forward output; do
+        if ! nft list chains 2>/dev/null | grep -qF "hook $hook"; then
+            log_append "[TWGCB-01-008-0252][FAIL] nftables missing base chain for hook: $hook"
+            nft252_fail=1
+        fi
+    done
+    if [ $nft252_fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0252][PASS] nftables has input, forward, output base chains"
+        set_flag flag_252 1
+    else
+        set_flag flag_252 0
+    fi
+fi
+
+# ======================================
+# TWGCB-01-008-0253
+# nftables 回送流量規則 (loopback traffic rules)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0253][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_253 2
+else
+    lo253_fail=0
+    nft list ruleset 2>/dev/null | grep -qF 'iif lo accept' || lo253_fail=1
+    nft list ruleset 2>/dev/null | grep -qF '127.0.0.0/8' || lo253_fail=1
+    if [ $lo253_fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0253][PASS] nftables loopback traffic rules configured"
+        set_flag flag_253 1
+    else
+        log_append "[TWGCB-01-008-0253][FAIL] nftables loopback traffic rules not fully configured"
+        set_flag flag_253 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0254
+# nftables 預設拒絕規則 (default DROP policy)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0254][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_254 2
+else
+    drop_count=$(nft list chains 2>/dev/null | grep -cE 'policy drop' || echo 0)
+    if [ "${drop_count:-0}" -ge 3 ]; then
+        log_append "[TWGCB-01-008-0254][PASS] nftables default DROP policy configured for input/forward/output"
+        set_flag flag_254 1
+    else
+        log_append "[TWGCB-01-008-0254][FAIL] nftables default DROP policy not fully configured (found $drop_count chains)"
+        set_flag flag_254 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0255
+# 載入 nftables 規則 (startup rules via /etc/sysconfig/nftables.conf)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0255][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_255 2
+else
+    if grep -qsE '^\s*include\s+' /etc/sysconfig/nftables.conf 2>/dev/null; then
+        log_append "[TWGCB-01-008-0255][PASS] nftables startup include configured in /etc/sysconfig/nftables.conf"
+        set_flag flag_255 1
+    else
+        log_append "[TWGCB-01-008-0255][FAIL] nftables startup include not configured in /etc/sysconfig/nftables.conf"
+        set_flag flag_255 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0256
+# iptables 服務啟用 (when using iptables instead of firewalld)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0256][SKIP] firewalld is in use; iptables section not applicable"
+    set_flag flag_256 2
+else
+    if systemctl is-enabled iptables 2>/dev/null | grep -q '^enabled$'; then
+        log_append "[TWGCB-01-008-0256][PASS] iptables service is enabled"
+        set_flag flag_256 1
+    else
+        log_append "[TWGCB-01-008-0256][FAIL] iptables service is not enabled"
+        set_flag flag_256 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0257
+# firewalld 停用 (when using iptables)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0257][SKIP] firewalld is in use; iptables section not applicable"
+    set_flag flag_257 2
+else
+    if systemctl is-enabled firewalld > /dev/null 2>&1; then
+        log_append "[TWGCB-01-008-0257][FAIL] firewalld is enabled (should be masked when using iptables)"
+        set_flag flag_257 0
+    else
+        log_append "[TWGCB-01-008-0257][PASS] firewalld is disabled/masked"
+        set_flag flag_257 1
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0258
+# iptables 預設拒絕規則 (INPUT/OUTPUT/FORWARD default DROP)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0258][SKIP] firewalld is in use; iptables section not applicable"
+    set_flag flag_258 2
+else
+    ipt258_fail=0
+    for chain in INPUT OUTPUT FORWARD; do
+        policy=$(iptables -L "$chain" 2>/dev/null | head -1 | awk '{print $NF}' | tr -d '()')
+        if [ "$policy" != "DROP" ]; then
+            log_append "[TWGCB-01-008-0258][FAIL] iptables $chain chain policy is $policy (expected DROP)"
+            ipt258_fail=1
+        fi
+    done
+    if [ $ipt258_fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0258][PASS] iptables INPUT/OUTPUT/FORWARD default policy is DROP"
+        set_flag flag_258 1
+    else
+        set_flag flag_258 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0259
+# iptables 回送流量規則 (loopback rules)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0259][SKIP] firewalld is in use; iptables section not applicable"
+    set_flag flag_259 2
+else
+    lo259_fail=0
+    iptables -L INPUT 2>/dev/null | grep -q 'ACCEPT.*lo' || lo259_fail=1
+    iptables -L OUTPUT 2>/dev/null | grep -q 'ACCEPT.*lo' || lo259_fail=1
+    iptables -L INPUT 2>/dev/null | grep -q 'DROP.*127.0.0.0' || lo259_fail=1
+    if [ $lo259_fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0259][PASS] iptables loopback rules configured"
+        set_flag flag_259 1
+    else
+        log_append "[TWGCB-01-008-0259][FAIL] iptables loopback rules not fully configured"
+        set_flag flag_259 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0260
+# ip6tables 預設拒絕規則 (INPUT/OUTPUT/FORWARD default DROP)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0260][SKIP] firewalld is in use; iptables section not applicable"
+    set_flag flag_260 2
+else
+    ipt260_fail=0
+    for chain in INPUT OUTPUT FORWARD; do
+        policy=$(ip6tables -L "$chain" 2>/dev/null | head -1 | awk '{print $NF}' | tr -d '()')
+        if [ "$policy" != "DROP" ]; then
+            log_append "[TWGCB-01-008-0260][FAIL] ip6tables $chain chain policy is $policy (expected DROP)"
+            ipt260_fail=1
+        fi
+    done
+    if [ $ipt260_fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0260][PASS] ip6tables INPUT/OUTPUT/FORWARD default policy is DROP"
+        set_flag flag_260 1
+    else
+        set_flag flag_260 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0261
+# ip6tables 回送流量規則 (IPv6 loopback rules)
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-008-0261][SKIP] firewalld is in use; iptables section not applicable"
+    set_flag flag_261 2
+else
+    lo261_fail=0
+    ip6tables -L INPUT 2>/dev/null | grep -q 'ACCEPT.*lo' || lo261_fail=1
+    ip6tables -L OUTPUT 2>/dev/null | grep -q 'ACCEPT.*lo' || lo261_fail=1
+    ip6tables -L INPUT 2>/dev/null | grep -q 'DROP.*::1' || lo261_fail=1
+    if [ $lo261_fail -eq 0 ]; then
+        log_append "[TWGCB-01-008-0261][PASS] ip6tables loopback rules configured"
+        set_flag flag_261 1
+    else
+        log_append "[TWGCB-01-008-0261][FAIL] ip6tables loopback rules not fully configured"
+        set_flag flag_261 0
+    fi
+fi
+# ======================================
+# TWGCB-01-008-0262
+# sshd 工作程式 (openssh-server installed and enabled)
+sshd262_fail=0
+if ! rpm -q openssh-server &>/dev/null; then
+    log_append "[TWGCB-01-008-0262][FAIL] openssh-server is not installed"
+    sshd262_fail=1
+fi
+if ! systemctl is-enabled sshd 2>/dev/null | grep -q '^enabled$'; then
+    log_append "[TWGCB-01-008-0262][FAIL] sshd service is not enabled"
+    sshd262_fail=1
+fi
+if [ $sshd262_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0262][PASS] openssh-server is installed and sshd is enabled"
+    set_flag flag_262 1
+else
+    set_flag flag_262 0
+fi
+
+# ======================================
+# TWGCB-01-008-0263
+# SSH 協議版本 (Protocol 2 only)
+if grep -qsE '^\s*Protocol\s+1' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0263][FAIL] Protocol 1 is configured in sshd_config"
+    set_flag flag_263 0
+else
+    log_append "[TWGCB-01-008-0263][PASS] Protocol 1 not configured (SSH-2 in use)"
+    set_flag flag_263 1
+fi
+# ======================================
+# TWGCB-01-008-0264
+# /etc/ssh/sshd_config 擁有者 (root:root)
+owner264=$(stat -c "%U:%G" /etc/ssh/sshd_config 2>/dev/null)
+if [ "$owner264" = "root:root" ]; then
+    log_append "[TWGCB-01-008-0264][PASS] /etc/ssh/sshd_config owner is root:root"
+    set_flag flag_264 1
+else
+    log_append "[TWGCB-01-008-0264][FAIL] /etc/ssh/sshd_config owner is $owner264 (expected root:root)"
+    set_flag flag_264 0
+fi
+# ======================================
+# TWGCB-01-008-0265
+# /etc/ssh/sshd_config 權限 (600 or more restrictive)
+perm265=$(stat -c "%a" /etc/ssh/sshd_config 2>/dev/null)
+if [ $(( 8#${perm265:-777} & 8#177 )) -eq 0 ]; then
+    log_append "[TWGCB-01-008-0265][PASS] /etc/ssh/sshd_config permission is $perm265 (600 or more restrictive)"
+    set_flag flag_265 1
+else
+    log_append "[TWGCB-01-008-0265][FAIL] /etc/ssh/sshd_config permission is $perm265 (expected 600 or more restrictive)"
+    set_flag flag_265 0
+fi
+# ======================================
+# TWGCB-01-008-0266
+# SSH 限制使用者 (AllowUsers/AllowGroups/DenyUsers/DenyGroups)
+if grep -qsE '^\s*(AllowUsers|AllowGroups|DenyUsers|DenyGroups)\s+' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0266][PASS] SSH user access restriction is configured"
+    set_flag flag_266 1
+else
+    log_append "[TWGCB-01-008-0266][FAIL] no AllowUsers/AllowGroups/DenyUsers/DenyGroups in sshd_config (manual config required)"
+    set_flag flag_266 0
+fi
+# ======================================
+# TWGCB-01-008-0267
+# SSH 主機私鑰擁有者 (ssh_host_*_key owner root:root)
+key267_fail=0
+while read -r keyfile; do
+    owner=$(stat -c "%U:%G" "$keyfile" 2>/dev/null)
+    if [ "$owner" != "root:root" ]; then
+        log_append "[TWGCB-01-008-0267][FAIL] $keyfile owner is $owner (expected root:root)"
+        key267_fail=1
+    fi
+done < <(find /etc/ssh -xdev -type f -name 'ssh_host_*_key' 2>/dev/null)
+if [ $key267_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0267][PASS] all SSH host private keys owned by root:root"
+    set_flag flag_267 1
+else
+    set_flag flag_267 0
+fi
+# ======================================
+# TWGCB-01-008-0268
+# SSH 主機私鑰權限 (ssh_host_*_key permission 600 or more restrictive)
+key268_fail=0
+while read -r keyfile; do
+    perm=$(stat -c "%a" "$keyfile" 2>/dev/null)
+    if [ $(( 8#${perm:-777} & 8#177 )) -ne 0 ]; then
+        log_append "[TWGCB-01-008-0268][FAIL] $keyfile permission is $perm (expected 600 or more restrictive)"
+        key268_fail=1
+    fi
+done < <(find /etc/ssh -xdev -type f -name 'ssh_host_*_key' 2>/dev/null)
+if [ $key268_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0268][PASS] all SSH host private keys have permission 600 or more restrictive"
+    set_flag flag_268 1
+else
+    set_flag flag_268 0
+fi
+# ======================================
+# TWGCB-01-008-0269
+# SSH 主機公鑰擁有者 (ssh_host_*_key.pub owner root:root)
+key269_fail=0
+while read -r keyfile; do
+    owner=$(stat -c "%U:%G" "$keyfile" 2>/dev/null)
+    if [ "$owner" != "root:root" ]; then
+        log_append "[TWGCB-01-008-0269][FAIL] $keyfile owner is $owner (expected root:root)"
+        key269_fail=1
+    fi
+done < <(find /etc/ssh -xdev -type f -name 'ssh_host_*_key.pub' 2>/dev/null)
+if [ $key269_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0269][PASS] all SSH host public keys owned by root:root"
+    set_flag flag_269 1
+else
+    set_flag flag_269 0
+fi
+# ======================================
+# TWGCB-01-008-0270
+# SSH 主機公鑰權限 (ssh_host_*_key.pub permission 644 or more restrictive)
+key270_fail=0
+while read -r keyfile; do
+    perm=$(stat -c "%a" "$keyfile" 2>/dev/null)
+    if [ $(( 8#${perm:-777} & 8#133 )) -ne 0 ]; then
+        log_append "[TWGCB-01-008-0270][FAIL] $keyfile permission is $perm (expected 644 or more restrictive)"
+        key270_fail=1
+    fi
+done < <(find /etc/ssh -xdev -type f -name 'ssh_host_*_key.pub' 2>/dev/null)
+if [ $key270_fail -eq 0 ]; then
+    log_append "[TWGCB-01-008-0270][PASS] all SSH host public keys have permission 644 or more restrictive"
+    set_flag flag_270 1
+else
+    set_flag flag_270 0
+fi
+# ======================================
+# TWGCB-01-008-0271
+# SSH 加密演算法 (Ciphers: aes128-ctr,aes192-ctr,aes256-ctr)
+if grep -qsE '(aes128-ctr|aes192-ctr|aes256-ctr)' /etc/crypto-policies/back-ends/opensshserver.config 2>/dev/null || \
+   grep -qsE '^\s*Ciphers\s+.*aes[0-9]+-ctr' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0271][PASS] SSH ciphers include AES-CTR modes"
+    set_flag flag_271 1
+else
+    log_append "[TWGCB-01-008-0271][FAIL] SSH AES-CTR ciphers not explicitly configured"
+    set_flag flag_271 0
+fi
+# ======================================
+# TWGCB-01-008-0272
+# SSH 紀錄層級 (LogLevel VERBOSE or INFO)
+if grep -qsE '^\s*LogLevel\s+(VERBOSE|INFO)\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0272][PASS] SSH LogLevel is VERBOSE or INFO"
+    set_flag flag_272 1
+else
+    log_append "[TWGCB-01-008-0272][FAIL] SSH LogLevel not set to VERBOSE or INFO in sshd_config"
+    set_flag flag_272 0
+fi
+
+# ======================================
+# TWGCB-01-008-0273
+# SSH X11Forwarding no
+if grep -qsE '^\s*X11Forwarding\s+no\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0273][PASS] SSH X11Forwarding is no"
+    set_flag flag_273 1
+else
+    log_append "[TWGCB-01-008-0273][FAIL] SSH X11Forwarding is not set to no"
+    set_flag flag_273 0
+fi
+# ======================================
+# TWGCB-01-008-0274
+# SSH MaxAuthTries (≤4, >0)
+auth274=$(grep -si '^\s*MaxAuthTries\s' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+if [ -n "$auth274" ] && [ "$auth274" -gt 0 ] && [ "$auth274" -le 4 ] 2>/dev/null; then
+    log_append "[TWGCB-01-008-0274][PASS] SSH MaxAuthTries is $auth274 (≤4)"
+    set_flag flag_274 1
+else
+    log_append "[TWGCB-01-008-0274][FAIL] SSH MaxAuthTries not set to 4 or less (current: ${auth274:-unset})"
+    set_flag flag_274 0
+fi
+# ======================================
+# TWGCB-01-008-0275
+# SSH IgnoreRhosts yes
+if grep -qsE '^\s*IgnoreRhosts\s+yes\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0275][PASS] SSH IgnoreRhosts is yes"
+    set_flag flag_275 1
+else
+    log_append "[TWGCB-01-008-0275][FAIL] SSH IgnoreRhosts is not set to yes"
+    set_flag flag_275 0
+fi
+# ======================================
+# TWGCB-01-008-0276
+# SSH HostbasedAuthentication no
+if grep -qsE '^\s*HostbasedAuthentication\s+no\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0276][PASS] SSH HostbasedAuthentication is no"
+    set_flag flag_276 1
+else
+    log_append "[TWGCB-01-008-0276][FAIL] SSH HostbasedAuthentication is not set to no"
+    set_flag flag_276 0
+fi
+# ======================================
+# TWGCB-01-008-0277
+# SSH PermitRootLogin no
+if grep -qsE '^\s*PermitRootLogin\s+no\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0277][PASS] SSH PermitRootLogin is no"
+    set_flag flag_277 1
+else
+    log_append "[TWGCB-01-008-0277][FAIL] SSH PermitRootLogin is not set to no"
+    set_flag flag_277 0
+fi
+# ======================================
+# TWGCB-01-008-0278
+# SSH PermitEmptyPasswords no
+if grep -qsE '^\s*PermitEmptyPasswords\s+no\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0278][PASS] SSH PermitEmptyPasswords is no"
+    set_flag flag_278 1
+else
+    log_append "[TWGCB-01-008-0278][FAIL] SSH PermitEmptyPasswords is not set to no"
+    set_flag flag_278 0
+fi
+# ======================================
+# TWGCB-01-008-0279
+# SSH PermitUserEnvironment no
+if grep -qsE '^\s*PermitUserEnvironment\s+no\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0279][PASS] SSH PermitUserEnvironment is no"
+    set_flag flag_279 1
+else
+    log_append "[TWGCB-01-008-0279][FAIL] SSH PermitUserEnvironment is not set to no"
+    set_flag flag_279 0
+fi
+# ======================================
+# TWGCB-01-008-0280
+# SSH ClientAliveInterval ≤600 (>0) and ClientAliveCountMax = 1
+cai280=$(grep -si '^\s*ClientAliveInterval\s' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+cacm280=$(grep -si '^\s*ClientAliveCountMax\s' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+if [ -n "$cai280" ] && [ "$cai280" -gt 0 ] && [ "$cai280" -le 600 ] 2>/dev/null && \
+   [ "$cacm280" = "1" ] 2>/dev/null; then
+    log_append "[TWGCB-01-008-0280][PASS] SSH ClientAliveInterval=$cai280 ClientAliveCountMax=$cacm280"
+    set_flag flag_280 1
+else
+    log_append "[TWGCB-01-008-0280][FAIL] SSH keepalive not configured (ClientAliveInterval=${cai280:-unset}, ClientAliveCountMax=${cacm280:-unset})"
+    set_flag flag_280 0
+fi
+# ======================================
+# TWGCB-01-008-0281
+# SSH LoginGraceTime ≤60 (>0)
+lgt281=$(grep -si '^\s*LoginGraceTime\s' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+if [ -n "$lgt281" ] && [ "$lgt281" -gt 0 ] && [ "$lgt281" -le 60 ] 2>/dev/null; then
+    log_append "[TWGCB-01-008-0281][PASS] SSH LoginGraceTime is $lgt281 (≤60)"
+    set_flag flag_281 1
+else
+    log_append "[TWGCB-01-008-0281][FAIL] SSH LoginGraceTime not set to 60 or less (current: ${lgt281:-unset})"
+    set_flag flag_281 0
+fi
+# ======================================
+# TWGCB-01-008-0282
+# SSH UsePAM yes
+if grep -qsE '^\s*UsePAM\s+yes\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0282][PASS] SSH UsePAM is yes"
+    set_flag flag_282 1
+else
+    log_append "[TWGCB-01-008-0282][FAIL] SSH UsePAM is not set to yes"
+    set_flag flag_282 0
+fi
+
+# ======================================
+# TWGCB-01-008-0283
+# SSH AllowTcpForwarding no
+if grep -qsE '^\s*AllowTcpForwarding\s+no\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0283][PASS] SSH AllowTcpForwarding is no"
+    set_flag flag_283 1
+else
+    log_append "[TWGCB-01-008-0283][FAIL] SSH AllowTcpForwarding is not set to no"
+    set_flag flag_283 0
+fi
+# ======================================
+# TWGCB-01-008-0284
+# SSH MaxStartups 10:30:60
+if grep -qsE '^\s*maxstartups\s+10:30:60\b' /etc/ssh/sshd_config 2>/dev/null || \
+   grep -qsE '^\s*MaxStartups\s+10:30:60\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0284][PASS] SSH MaxStartups is 10:30:60"
+    set_flag flag_284 1
+else
+    ms284=$(grep -si '^\s*MaxStartups\s' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+    log_append "[TWGCB-01-008-0284][FAIL] SSH MaxStartups not set to 10:30:60 (current: ${ms284:-unset})"
+    set_flag flag_284 0
+fi
+# ======================================
+# TWGCB-01-008-0285
+# SSH MaxSessions (≤4, >0)
+ms285=$(grep -si '^\s*MaxSessions\s' /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' | head -1)
+if [ -n "$ms285" ] && [ "$ms285" -gt 0 ] && [ "$ms285" -le 4 ] 2>/dev/null; then
+    log_append "[TWGCB-01-008-0285][PASS] SSH MaxSessions is $ms285 (≤4)"
+    set_flag flag_285 1
+else
+    log_append "[TWGCB-01-008-0285][FAIL] SSH MaxSessions not set to 4 or less (current: ${ms285:-unset})"
+    set_flag flag_285 0
+fi
+# ======================================
+# TWGCB-01-008-0286
+# SSH StrictModes yes
+if grep -qsE '^\s*StrictModes\s+yes\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0286][PASS] SSH StrictModes is yes"
+    set_flag flag_286 1
+else
+    log_append "[TWGCB-01-008-0286][FAIL] SSH StrictModes is not set to yes"
+    set_flag flag_286 0
+fi
+# ======================================
+# TWGCB-01-008-0287
+# SSH Compression no or delayed
+if grep -qsE '^\s*Compression\s+(no|delayed)\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0287][PASS] SSH Compression is no or delayed"
+    set_flag flag_287 1
+else
+    log_append "[TWGCB-01-008-0287][FAIL] SSH Compression is not set to no or delayed"
+    set_flag flag_287 0
+fi
+# ======================================
+# TWGCB-01-008-0288
+# SSH IgnoreUserKnownHosts yes
+if grep -qsE '^\s*IgnoreUserKnownHosts\s+yes\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0288][PASS] SSH IgnoreUserKnownHosts is yes"
+    set_flag flag_288 1
+else
+    log_append "[TWGCB-01-008-0288][FAIL] SSH IgnoreUserKnownHosts is not set to yes"
+    set_flag flag_288 0
+fi
+# ======================================
+# TWGCB-01-008-0289
+# SSH PrintLastLog yes
+if grep -qsE '^\s*PrintLastLog\s+yes\b' /etc/ssh/sshd_config 2>/dev/null; then
+    log_append "[TWGCB-01-008-0289][PASS] SSH PrintLastLog is yes"
+    set_flag flag_289 1
+else
+    log_append "[TWGCB-01-008-0289][FAIL] SSH PrintLastLog is not set to yes"
+    set_flag flag_289 0
+fi
+# ======================================
+# TWGCB-01-008-0290
+# shosts.equiv 不存在
+shosts290=$(find / -xdev -name shosts.equiv 2>/dev/null | head -5)
+if [ -z "$shosts290" ]; then
+    log_append "[TWGCB-01-008-0290][PASS] no shosts.equiv files found"
+    set_flag flag_290 1
+else
+    echo "$shosts290" | while read -r f; do
+        log_append "[TWGCB-01-008-0290][FAIL] shosts.equiv found: $f"
+    done
+    set_flag flag_290 0
+fi
+# ======================================
+# TWGCB-01-008-0291
+# .shosts 不存在
+dot_shosts291=$(find / -xdev -name '.shosts' 2>/dev/null | head -5)
+if [ -z "$dot_shosts291" ]; then
+    log_append "[TWGCB-01-008-0291][PASS] no .shosts files found"
+    set_flag flag_291 1
+else
+    echo "$dot_shosts291" | while read -r f; do
+        log_append "[TWGCB-01-008-0291][FAIL] .shosts found: $f"
+    done
+    set_flag flag_291 0
+fi
+# ======================================
+# TWGCB-01-008-0292
+# 採用系統加密政策 (CRYPTO_POLICY must not be set in /etc/sysconfig/sshd)
+if grep -qsE '^\s*CRYPTO_POLICY\s*=' /etc/sysconfig/sshd 2>/dev/null; then
+    log_append "[TWGCB-01-008-0292][FAIL] CRYPTO_POLICY is set in /etc/sysconfig/sshd (should use system crypto policy)"
+    set_flag flag_292 0
+else
+    log_append "[TWGCB-01-008-0292][PASS] CRYPTO_POLICY not overridden in /etc/sysconfig/sshd (using system crypto policy)"
+    set_flag flag_292 1
+fi
 
 echo
 grep -E 'FAIL|CRITICAL' "$log"
 echo "Summary: $pass checks passed, $fail checks failed, $skip checks skipped."
+echo "GCB for RHEL 8 check completed. See ${log} for details."
 echo "GCB for RHEL 8 check completed. See $log for details."
