@@ -4373,6 +4373,13 @@ fi
 
 echo
 grep -E 'FAIL|CRITICAL' "$log"
-echo "Summary: $pass checks passed, $fail checks failed, $skip checks skipped."
-echo "GCB for RHEL 8 check completed. See ${log} for details."
-echo "GCB for RHEL 8 check completed. See $log for details."
+# ======================================
+# 結果統計
+log_append "========================================"
+log_append "檢查結果統計:"
+log_append "通過(PASS): $pass"
+log_append "失敗(FAIL): $fail"
+log_append "跳過(SKIP): $skip"
+log_append "========================================"
+echo "Log saved to: $log"
+echo "Flag file saved to: $flag"

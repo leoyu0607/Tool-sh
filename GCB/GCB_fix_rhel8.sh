@@ -4230,5 +4230,12 @@ if [ $sshd_changed -eq 1 ]; then
 fi
 
 echo
-echo "Summary: $success fixes applied, $ignore fixes ignored, $error errors occurred."
-echo "Fix completed. Please reboot the system and review the log file for details."
+# ======================================
+# 結果統計
+log_append "========================================"
+log_append "修復結果統計:"
+log_append "成功(SUCCESS): $success"
+log_append "忽略(IGNORE): $ignore"
+log_append "失敗(ERROR): $error"
+log_append "========================================"
+echo "Log saved to: $log"
