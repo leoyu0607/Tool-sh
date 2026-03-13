@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script checks if the operating system is RHEL 8  
-##version:20260217
+##version:GCB_v1.3
 
 if [ "$(id -u)" -ne 0 ]; then
     echo "This script must be run as root"
