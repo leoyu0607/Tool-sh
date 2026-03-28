@@ -3023,7 +3023,9 @@ else
     set_flag flag_191 1
 fi
 
-# TWGCB-01-012-0192: crond service is enabled
+# ======================================
+# TWGCB-01-012-0192
+# crond服務須設定為啟用
 if systemctl is-enabled crond > /dev/null 2>&1; then
     log_append "[TWGCB-01-012-0192][PASS] crond service is enabled"
     set_flag flag_192 1
@@ -3032,7 +3034,9 @@ else
     set_flag flag_192 0
 fi
 
-# TWGCB-01-012-0193: /etc/crontab owner root:root
+# ======================================
+# TWGCB-01-012-0193
+# /etc/crontab檔案所有權需為root:root
 if [ "$(stat -c '%U:%G' /etc/crontab 2>/dev/null)" = "root:root" ]; then
     log_append "[TWGCB-01-012-0193][PASS] /etc/crontab is owned by root:root"
     set_flag flag_193 1
@@ -3041,7 +3045,9 @@ else
     set_flag flag_193 0
 fi
 
-# TWGCB-01-012-0194: /etc/crontab permissions 600
+# ======================================
+# TWGCB-01-012-0194
+# /etc/crontab檔案權限需設定為600或更嚴格
 if [ "$(stat -c '%a' /etc/crontab 2>/dev/null)" = "600" ]; then
     log_append "[TWGCB-01-012-0194][PASS] /etc/crontab permissions are 600"
     set_flag flag_194 1
@@ -3050,7 +3056,9 @@ else
     set_flag flag_194 0
 fi
 
-# TWGCB-01-012-0195: /etc/cron.hourly owner root:root
+# ======================================
+# TWGCB-01-012-0195
+# /etc/cron.hourly目錄所有權需為root:root
 if [ "$(stat -c '%U:%G' /etc/cron.hourly 2>/dev/null)" = "root:root" ]; then
     log_append "[TWGCB-01-012-0195][PASS] /etc/cron.hourly is owned by root:root"
     set_flag flag_195 1
@@ -3059,7 +3067,9 @@ else
     set_flag flag_195 0
 fi
 
-# TWGCB-01-012-0196: /etc/cron.hourly permissions 700
+# ======================================
+# TWGCB-01-012-0196
+# /etc/cron.hourly目錄權限需設定為700或更嚴格
 if [ "$(stat -c '%a' /etc/cron.hourly 2>/dev/null)" = "700" ]; then
     log_append "[TWGCB-01-012-0196][PASS] /etc/cron.hourly permissions are 700"
     set_flag flag_196 1
@@ -3068,7 +3078,9 @@ else
     set_flag flag_196 0
 fi
 
-# TWGCB-01-012-0197: /etc/cron.daily owner root:root
+# ======================================
+# TWGCB-01-012-0197
+# /etc/cron.daily目錄所有權需為root:root
 if [ "$(stat -c '%U:%G' /etc/cron.daily 2>/dev/null)" = "root:root" ]; then
     log_append "[TWGCB-01-012-0197][PASS] /etc/cron.daily is owned by root:root"
     set_flag flag_197 1
@@ -3077,7 +3089,9 @@ else
     set_flag flag_197 0
 fi
 
-# TWGCB-01-012-0198: /etc/cron.daily permissions 700
+# ======================================
+# TWGCB-01-012-0198
+# /etc/cron.daily目錄權限需設定為700或更嚴格
 if [ "$(stat -c '%a' /etc/cron.daily 2>/dev/null)" = "700" ]; then
     log_append "[TWGCB-01-012-0198][PASS] /etc/cron.daily permissions are 700"
     set_flag flag_198 1
@@ -3086,7 +3100,9 @@ else
     set_flag flag_198 0
 fi
 
-# TWGCB-01-012-0199: /etc/cron.weekly owner root:root
+# ======================================
+# TWGCB-01-012-0199
+# /etc/cron.weekly目錄所有權需為root:root
 if [ "$(stat -c '%U:%G' /etc/cron.weekly 2>/dev/null)" = "root:root" ]; then
     log_append "[TWGCB-01-012-0199][PASS] /etc/cron.weekly is owned by root:root"
     set_flag flag_199 1
@@ -3095,7 +3111,9 @@ else
     set_flag flag_199 0
 fi
 
-# TWGCB-01-012-0200: /etc/cron.weekly permissions 700
+# ======================================
+# TWGCB-01-012-0200
+# /etc/cron.weekly目錄權限需設定為700或更嚴格
 if [ "$(stat -c '%a' /etc/cron.weekly 2>/dev/null)" = "700" ]; then
     log_append "[TWGCB-01-012-0200][PASS] /etc/cron.weekly permissions are 700"
     set_flag flag_200 1
@@ -3104,7 +3122,9 @@ else
     set_flag flag_200 0
 fi
 
-# TWGCB-01-012-0201: /etc/cron.monthly owner root:root
+# ======================================
+# TWGCB-01-012-0201
+# /etc/cron.monthly目錄所有權需為root:root
 if [ "$(stat -c '%U:%G' /etc/cron.monthly 2>/dev/null)" = "root:root" ]; then
     log_append "[TWGCB-01-012-0201][PASS] /etc/cron.monthly is owned by root:root"
     set_flag flag_201 1
@@ -3113,7 +3133,9 @@ else
     set_flag flag_201 0
 fi
 
-# TWGCB-01-012-0202: /etc/cron.monthly permissions 700
+# ======================================
+# TWGCB-01-012-0202
+# /etc/cron.monthly目錄權限需設定為700或更嚴格
 perm202=$(stat -c "%a" /etc/cron.monthly 2>/dev/null)
 if [ $(( 8#${perm202: -3} & ~8#700 & 8#777 )) -eq 0 ]; then
     log_append "[TWGCB-01-012-0202][PASS] /etc/cron.monthly has permission $perm202 (700 or more restrictive)"
@@ -3123,7 +3145,9 @@ else
     set_flag flag_202 0
 fi
 
-# TWGCB-01-012-0203: /etc/cron.d owner root:root
+# ======================================
+# TWGCB-01-012-0203
+# /etc/cron.d目錄所有權需為root:root
 owner203=$(stat -c "%U:%G" /etc/cron.d 2>/dev/null)
 if [ "$owner203" = "root:root" ]; then
     log_append "[TWGCB-01-012-0203][PASS] /etc/cron.d is owned by root:root"
@@ -3133,7 +3157,9 @@ else
     set_flag flag_203 0
 fi
 
-# TWGCB-01-012-0204: /etc/cron.d permissions 700
+# ======================================
+# TWGCB-01-012-0204
+# /etc/cron.d目錄權限需設定為700或更嚴格
 perm204=$(stat -c "%a" /etc/cron.d 2>/dev/null)
 if [ $(( 8#${perm204: -3} & ~8#700 & 8#777 )) -eq 0 ]; then
     log_append "[TWGCB-01-012-0204][PASS] /etc/cron.d has permission $perm204 (700 or more restrictive)"
@@ -3143,7 +3169,9 @@ else
     set_flag flag_204 0
 fi
 
-# TWGCB-01-012-0205: cron.allow/at.allow exist root:root, cron.deny/at.deny absent
+# ======================================
+# TWGCB-01-012-0205
+# cron.allow及at.allow須存在且所有權需為root:root，cron.deny及at.deny須移除
 cron205_fail=0
 for f in /etc/cron.allow /etc/at.allow; do
     if [ -f "$f" ]; then
@@ -3165,7 +3193,9 @@ if [ -f /etc/cron.deny ] || [ -f /etc/at.deny ]; then
 fi
 if [ $cron205_fail -eq 0 ]; then set_flag flag_205 1; else set_flag flag_205 0; fi
 
-# TWGCB-01-012-0206: cron.allow/at.allow permissions 600
+# ======================================
+# TWGCB-01-012-0206
+# cron.allow及at.allow檔案權限需設定為600或更嚴格
 cron206_fail=0
 for f in /etc/cron.allow /etc/at.allow; do
     if [ -f "$f" ]; then
@@ -3183,7 +3213,9 @@ for f in /etc/cron.allow /etc/at.allow; do
 done
 if [ $cron206_fail -eq 0 ]; then set_flag flag_206 1; else set_flag flag_206 0; fi
 
-# TWGCB-01-012-0207: rsyslog cron logging configured
+# ======================================
+# TWGCB-01-012-0207
+# rsyslog需設定記錄cron日誌
 if grep -rqsE 'cron\.\*' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null; then
     log_append "[TWGCB-01-012-0207][PASS] rsyslog cron logging is configured"
     set_flag flag_207 1
@@ -3192,7 +3224,9 @@ else
     set_flag flag_207 0
 fi
 
-# TWGCB-01-012-0208: pwquality retry=3
+# ======================================
+# TWGCB-01-012-0208
+# PAM密碼品質retry次數需設定為3或以下
 pam208_fail=0
 for f in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
     [ ! -f "$f" ] && continue
@@ -3212,7 +3246,9 @@ if grep -qE '^\s*Retry\s*=\s*3' /etc/security/pwquality.conf 2>/dev/null || \
 fi
 if [ $pam208_fail -eq 0 ]; then set_flag flag_208 1; else set_flag flag_208 0; fi
 
-# TWGCB-01-012-0209: PAM enforce_for_root
+# ======================================
+# TWGCB-01-012-0209
+# PAM密碼品質需強制對root帳號執行(enforce_for_root)
 pam209_fail=0
 for f in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
     [ ! -f "$f" ] && continue
@@ -3225,7 +3261,9 @@ for f in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
 done
 if [ $pam209_fail -eq 0 ]; then set_flag flag_209 1; else set_flag flag_209 0; fi
 
-# TWGCB-01-012-0210: pwquality minlen >= 12
+# ======================================
+# TWGCB-01-012-0210
+# PAM密碼最小長度需設定為12或以上(minlen)
 if grep -qsE '^\s*minlen\s*=\s*(1[2-9]|[2-9][0-9])' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0210][PASS] pwquality minlen >= 12"
     set_flag flag_210 1
@@ -3234,7 +3272,9 @@ else
     set_flag flag_210 0
 fi
 
-# TWGCB-01-012-0211: pwquality minclass=4
+# ======================================
+# TWGCB-01-012-0211
+# PAM密碼最少字元類型需設定為4(minclass)
 if grep -qsE '^\s*minclass\s*=\s*[4-9]' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0211][PASS] pwquality minclass >= 4"
     set_flag flag_211 1
@@ -3243,7 +3283,9 @@ else
     set_flag flag_211 0
 fi
 
-# TWGCB-01-012-0212: pwquality dcredit=-1
+# ======================================
+# TWGCB-01-012-0212
+# PAM密碼需包含至少1個數字(dcredit=-1)
 if grep -qsE '^\s*dcredit\s*=\s*-[1-9]' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0212][PASS] pwquality dcredit is set (require at least 1 digit)"
     set_flag flag_212 1
@@ -3252,7 +3294,9 @@ else
     set_flag flag_212 0
 fi
 
-# TWGCB-01-012-0213: pwquality ucredit=-1
+# ======================================
+# TWGCB-01-012-0213
+# PAM密碼需包含至少1個大寫字母(ucredit=-1)
 if grep -qsE '^\s*ucredit\s*=\s*-[1-9]' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0213][PASS] pwquality ucredit is set (require at least 1 uppercase)"
     set_flag flag_213 1
@@ -3261,7 +3305,9 @@ else
     set_flag flag_213 0
 fi
 
-# TWGCB-01-012-0214: pwquality lcredit=-1
+# ======================================
+# TWGCB-01-012-0214
+# PAM密碼需包含至少1個小寫字母(lcredit=-1)
 if grep -qsE '^\s*lcredit\s*=\s*-[1-9]' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0214][PASS] pwquality lcredit is set (require at least 1 lowercase)"
     set_flag flag_214 1
@@ -3270,7 +3316,9 @@ else
     set_flag flag_214 0
 fi
 
-# TWGCB-01-012-0215: pwquality ocredit=-1
+# ======================================
+# TWGCB-01-012-0215
+# PAM密碼需包含至少1個特殊字元(ocredit=-1)
 if grep -qsE '^\s*ocredit\s*=\s*-[1-9]' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0215][PASS] pwquality ocredit is set (require at least 1 special char)"
     set_flag flag_215 1
@@ -3279,7 +3327,9 @@ else
     set_flag flag_215 0
 fi
 
-# TWGCB-01-012-0216: pwquality difok >= 3
+# ======================================
+# TWGCB-01-012-0216
+# PAM密碼與舊密碼相異字元數需設定為3或以上(difok)
 if grep -qsE '^\s*difok\s*=\s*[3-9]' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0216][PASS] pwquality difok >= 3"
     set_flag flag_216 1
@@ -3288,7 +3338,9 @@ else
     set_flag flag_216 0
 fi
 
-# TWGCB-01-012-0217: pwquality maxclassrepeat <= 4
+# ======================================
+# TWGCB-01-012-0217
+# PAM密碼相同字元類型連續次數需設定為4或以下(maxclassrepeat)
 if grep -qsE '^\s*maxclassrepeat\s*=\s*[1-4]' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0217][PASS] pwquality maxclassrepeat <= 4"
     set_flag flag_217 1
@@ -3297,7 +3349,9 @@ else
     set_flag flag_217 0
 fi
 
-# TWGCB-01-012-0218: pwquality maxrepeat <= 3
+# ======================================
+# TWGCB-01-012-0218
+# PAM密碼相同字元連續次數需設定為3或以下(maxrepeat)
 if grep -qsE '^\s*maxrepeat\s*=\s*[1-3]' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0218][PASS] pwquality maxrepeat <= 3"
     set_flag flag_218 1
@@ -3306,7 +3360,9 @@ else
     set_flag flag_218 0
 fi
 
-# TWGCB-01-012-0219: pwquality dictcheck=1
+# ======================================
+# TWGCB-01-012-0219
+# PAM密碼字典檢查需設定為啟用(dictcheck=1)
 if grep -qsE '^\s*dictcheck\s*=\s*1' /etc/security/pwquality.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0219][PASS] pwquality dictcheck=1 is configured"
     set_flag flag_219 1
@@ -3315,7 +3371,9 @@ else
     set_flag flag_219 0
 fi
 
-# TWGCB-01-012-0220: faillock deny <= 5
+# ======================================
+# TWGCB-01-012-0220
+# faillock帳號鎖定失敗次數需設定為5或以下(deny)
 flock220_fail=0
 if grep -qsE '^\s*deny\s*=\s*[1-5]' /etc/security/faillock.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0220][PASS] faillock deny <= 5 in faillock.conf"
@@ -3327,7 +3385,9 @@ else
 fi
 if [ $flock220_fail -eq 0 ]; then set_flag flag_220 1; else set_flag flag_220 0; fi
 
-# TWGCB-01-012-0221: faillock unlock_time >= 900
+# ======================================
+# TWGCB-01-012-0221
+# faillock帳號解鎖等待時間需設定為900秒或以上(unlock_time)
 flock221_fail=0
 if grep -qsE '^\s*unlock_time\s*=\s*(9[0-9][0-9]|[1-9][0-9]{3,})' /etc/security/faillock.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0221][PASS] faillock unlock_time >= 900 in faillock.conf"
@@ -3339,7 +3399,9 @@ else
 fi
 if [ $flock221_fail -eq 0 ]; then set_flag flag_221 1; else set_flag flag_221 0; fi
 
-# TWGCB-01-012-0222: password remember >= 3
+# ======================================
+# TWGCB-01-012-0222
+# 密碼歷史記錄次數需設定為3或以上(remember)
 pam222_fail=0
 for f in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
     [ ! -f "$f" ] && continue
@@ -3352,7 +3414,9 @@ for f in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
 done
 if [ $pam222_fail -eq 0 ]; then set_flag flag_222 1; else set_flag flag_222 0; fi
 
-# TWGCB-01-012-0223: pam_lastlog showfailed
+# ======================================
+# TWGCB-01-012-0223
+# 需啟用pam_lastlog顯示上次登入失敗資訊
 pam223_found=0
 for f in /etc/pam.d/system-auth /etc/pam.d/login /etc/pam.d/sshd; do
     [ ! -f "$f" ] && continue
@@ -3367,7 +3431,9 @@ if [ $pam223_found -eq 1 ]; then set_flag flag_223 1; else
     set_flag flag_223 0
 fi
 
-# TWGCB-01-012-0224: crypt_style=sha512 and ENCRYPT_METHOD=SHA512
+# ======================================
+# TWGCB-01-012-0224
+# 密碼加密演算法需設定為SHA512
 pw224_fail=0
 if grep -qsE '^\s*crypt_style\s*=\s*sha512' /etc/libuser.conf 2>/dev/null; then
     log_append "[TWGCB-01-012-0224][PASS] libuser.conf crypt_style=sha512"
@@ -3383,7 +3449,9 @@ else
 fi
 if [ $pw224_fail -eq 0 ]; then set_flag flag_224 1; else set_flag flag_224 0; fi
 
-# TWGCB-01-012-0225: PASS_MIN_DAYS >= 1
+# ======================================
+# TWGCB-01-012-0225
+# 密碼最短使用天數需設定為1或以上(PASS_MIN_DAYS)
 if grep -qsE '^\s*PASS_MIN_DAYS\s+[1-9]' /etc/login.defs 2>/dev/null; then
     log_append "[TWGCB-01-012-0225][PASS] login.defs PASS_MIN_DAYS >= 1"
     set_flag flag_225 1
@@ -3392,7 +3460,9 @@ else
     set_flag flag_225 0
 fi
 
-# TWGCB-01-012-0226: PASS_WARN_AGE >= 14
+# ======================================
+# TWGCB-01-012-0226
+# 密碼到期前警告天數需設定為14或以上(PASS_WARN_AGE)
 if grep -qsE '^\s*PASS_WARN_AGE\s+(1[4-9]|[2-9][0-9])' /etc/login.defs 2>/dev/null; then
     log_append "[TWGCB-01-012-0226][PASS] login.defs PASS_WARN_AGE >= 14"
     set_flag flag_226 1
@@ -3401,7 +3471,9 @@ else
     set_flag flag_226 0
 fi
 
-# TWGCB-01-012-0227: PASS_MAX_DAYS <= 90
+# ======================================
+# TWGCB-01-012-0227
+# 密碼最長使用天數需設定為90或以下(PASS_MAX_DAYS)
 max_days=$(grep -sE '^\s*PASS_MAX_DAYS\s+' /etc/login.defs 2>/dev/null | awk '{print $2}')
 if [ -n "$max_days" ] && [ "$max_days" -le 90 ] 2>/dev/null; then
     log_append "[TWGCB-01-012-0227][PASS] login.defs PASS_MAX_DAYS=$max_days (<= 90)"
@@ -3411,7 +3483,9 @@ else
     set_flag flag_227 0
 fi
 
-# TWGCB-01-012-0228: useradd default INACTIVE <= 30
+# ======================================
+# TWGCB-01-012-0228
+# 帳號密碼過期後停用天數需設定為30或以下(INACTIVE)
 inactive_val=$(useradd -D 2>/dev/null | grep INACTIVE | cut -d= -f2)
 if [ -n "$inactive_val" ] && [ "$inactive_val" -le 30 ] && [ "$inactive_val" -ge 1 ] 2>/dev/null; then
     log_append "[TWGCB-01-012-0228][PASS] useradd default INACTIVE=$inactive_val (<= 30)"
@@ -3421,7 +3495,9 @@ else
     set_flag flag_228 0
 fi
 
-# TWGCB-01-012-0229: FAIL_DELAY >= 4
+# ======================================
+# TWGCB-01-012-0229
+# 登入失敗後延遲時間需設定為4秒或以上(FAIL_DELAY)
 fail_delay=$(grep -sE '^\s*FAIL_DELAY\s+' /etc/login.defs 2>/dev/null | awk '{print $2}')
 if [ -n "$fail_delay" ] && [ "$fail_delay" -ge 4 ] 2>/dev/null; then
     log_append "[TWGCB-01-012-0229][PASS] login.defs FAIL_DELAY=$fail_delay (>= 4)"
@@ -3431,7 +3507,9 @@ else
     set_flag flag_229 0
 fi
 
-# TWGCB-01-012-0230: CREATE_HOME=yes
+# ======================================
+# TWGCB-01-012-0230
+# 新增使用者時需自動建立家目錄(CREATE_HOME=yes)
 if grep -qsE '^\s*CREATE_HOME\s+yes' /etc/login.defs 2>/dev/null; then
     log_append "[TWGCB-01-012-0230][PASS] login.defs CREATE_HOME=yes"
     set_flag flag_230 1
@@ -3440,7 +3518,9 @@ else
     set_flag flag_230 0
 fi
 
-# TWGCB-01-012-0231: sudoers no NOPASSWD or !authenticate
+# ======================================
+# TWGCB-01-012-0231
+# sudo設定不得包含NOPASSWD或!authenticate
 sudo231_fail=0
 if grep -rsiE '(NOPASSWD|!authenticate)' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | grep -vE '^\s*#' | grep -q .; then
     log_append "[TWGCB-01-012-0231][FAIL] NOPASSWD or !authenticate found in sudoers (manual remediation required)"
@@ -3450,7 +3530,9 @@ else
 fi
 if [ $sudo231_fail -eq 0 ]; then set_flag flag_231 1; else set_flag flag_231 0; fi
 
-# TWGCB-01-012-0232: limits maxlogins <= 10
+# ======================================
+# TWGCB-01-012-0232
+# 使用者最大同時登入數需設定為10或以下
 if grep -rqsE '^\s*\*\s+hard\s+maxlogins\s+([1-9]|10)\b' /etc/security/limits.conf /etc/security/limits.d/ 2>/dev/null; then
     log_append "[TWGCB-01-012-0232][PASS] limits maxlogins <= 10 is configured"
     set_flag flag_232 1
@@ -3459,7 +3541,9 @@ else
     set_flag flag_232 0
 fi
 
-# TWGCB-01-012-0233: kbd package installed
+# ======================================
+# TWGCB-01-012-0233
+# 需安裝kbd套件
 if rpm -q kbd &>/dev/null; then
     log_append "[TWGCB-01-012-0233][PASS] kbd package is installed"
     set_flag flag_233 1
@@ -3468,7 +3552,9 @@ else
     set_flag flag_233 0
 fi
 
-# TWGCB-01-012-0234: GNOME screensaver lock-enabled=true
+# ======================================
+# TWGCB-01-012-0234
+# GNOME螢幕保護程式鎖定功能須設定為啟用
 if command -v dconf &>/dev/null; then
     if grep -rqsE '^\s*lock-enabled\s*=\s*true' /etc/dconf/db/ 2>/dev/null; then
         log_append "[TWGCB-01-012-0234][PASS] GNOME screensaver lock-enabled=true"
@@ -3482,7 +3568,9 @@ else
     set_flag flag_234 2
 fi
 
-# TWGCB-01-012-0235: GNOME idle-delay >= 900
+# ======================================
+# TWGCB-01-012-0235
+# GNOME螢幕保護程式閒置時間需設定為900秒或以上
 if command -v dconf &>/dev/null; then
     if grep -rqsE '^\s*idle-delay\s*=\s*uint32\s+[89][0-9][0-9]|idle-delay\s*=\s*uint32\s+[1-9][0-9]{3,}' /etc/dconf/db/ 2>/dev/null; then
         log_append "[TWGCB-01-012-0235][PASS] GNOME idle-delay >= 900 configured"
@@ -3496,7 +3584,9 @@ else
     set_flag flag_235 2
 fi
 
-# TWGCB-01-012-0236: GDM AutomaticLoginEnable=false
+# ======================================
+# TWGCB-01-012-0236
+# GDM自動登入功能須設定為停用
 if [ -f /etc/gdm/custom.conf ]; then
     if grep -qsE '^\s*AutomaticLoginEnable\s*=\s*[Ff]alse' /etc/gdm/custom.conf 2>/dev/null; then
         log_append "[TWGCB-01-012-0236][PASS] GDM AutomaticLoginEnable=false"
@@ -3510,7 +3600,9 @@ else
     set_flag flag_236 2
 fi
 
-# TWGCB-01-012-0237: system accounts use nologin or /bin/false
+# ======================================
+# TWGCB-01-012-0237
+# 系統帳號須設定使用nologin或/bin/false
 uid_min=$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs 2>/dev/null)
 uid_min="${uid_min:-1000}"
 nologin_path=$(which nologin 2>/dev/null || echo "/sbin/nologin")
@@ -3531,7 +3623,9 @@ else
     set_flag flag_237 0
 fi
 
-# TWGCB-01-012-0238: TMOUT >= 900
+# ======================================
+# TWGCB-01-012-0238
+# 終端機閒置超時時間需設定為900秒或以下(TMOUT)
 if grep -rqsE '^\s*readonly\s+TMOUT\s*=\s*(9[0-9][0-9]|[1-9][0-9]{3,})' /etc/profile /etc/profile.d/ 2>/dev/null || \
    grep -rqsE '^\s*TMOUT\s*=\s*(9[0-9][0-9]|[1-9][0-9]{3,})' /etc/profile /etc/profile.d/ 2>/dev/null; then
     log_append "[TWGCB-01-012-0238][PASS] TMOUT >= 900 configured in profile"
@@ -3541,7 +3635,9 @@ else
     set_flag flag_238 0
 fi
 
-# TWGCB-01-012-0239: GNOME dconf locks for screensaver
+# ======================================
+# TWGCB-01-012-0239
+# GNOME螢幕保護程式設定需設定為鎖定(dconf locks)
 if command -v dconf &>/dev/null; then
     if grep -rqsF '/org/gnome/desktop/session/idle-delay' /etc/dconf/db/ 2>/dev/null; then
         log_append "[TWGCB-01-012-0239][PASS] GNOME dconf locks for screensaver configured"
@@ -3555,7 +3651,9 @@ else
     set_flag flag_239 2
 fi
 
-# TWGCB-01-012-0240: root primary group GID 0
+# ======================================
+# TWGCB-01-012-0240
+# root帳號的主要群組須為GID 0
 root_gid=$(id -g root 2>/dev/null)
 if [ "$root_gid" = "0" ]; then
     log_append "[TWGCB-01-012-0240][PASS] root primary group is GID 0"
@@ -3565,7 +3663,9 @@ else
     set_flag flag_240 0
 fi
 
-# TWGCB-01-012-0241: umask 027 in profile files
+# ======================================
+# TWGCB-01-012-0241
+# 系統設定檔中umask需設定為027或更嚴格
 umask241_fail=0
 if grep -rqsE '^\s*umask\s+0?27\b' /etc/profile /etc/profile.d/ /etc/bashrc 2>/dev/null; then
     log_append "[TWGCB-01-012-0241][PASS] umask 027 configured in profile files"
@@ -3575,7 +3675,9 @@ else
 fi
 if [ $umask241_fail -eq 0 ]; then set_flag flag_241 1; else set_flag flag_241 0; fi
 
-# TWGCB-01-012-0242: login.defs UMASK=027
+# ======================================
+# TWGCB-01-012-0242
+# /etc/login.defs中UMASK需設定為027或更嚴格
 if grep -qsE '^\s*UMASK\s+0?27\b' /etc/login.defs 2>/dev/null; then
     log_append "[TWGCB-01-012-0242][PASS] login.defs UMASK=027"
     set_flag flag_242 1
@@ -3584,7 +3686,9 @@ else
     set_flag flag_242 0
 fi
 
-# TWGCB-01-012-0243: /etc/pam.d/su has pam_wheel.so use_uid
+# ======================================
+# TWGCB-01-012-0243
+# /etc/pam.d/su需設定pam_wheel.so use_uid
 if grep -qsE '^\s*auth\s+required\s+pam_wheel\.so\s+use_uid' /etc/pam.d/su 2>/dev/null; then
     log_append "[TWGCB-01-012-0243][PASS] /etc/pam.d/su has auth required pam_wheel.so use_uid"
     set_flag flag_243 1
@@ -3593,7 +3697,9 @@ else
     set_flag flag_243 0
 fi
 
-# TWGCB-01-012-0244: firewalld installed
+# ======================================
+# TWGCB-01-012-0244
+# 需安裝firewalld套件
 if rpm -q firewalld &>/dev/null; then
     log_append "[TWGCB-01-012-0244][PASS] firewalld is installed"
     set_flag flag_244 1
@@ -3602,7 +3708,9 @@ else
     set_flag flag_244 0
 fi
 
-# TWGCB-01-012-0245: firewalld service enabled
+# ======================================
+# TWGCB-01-012-0245
+# firewalld服務須設定為啟用
 if systemctl is-enabled firewalld 2>/dev/null | grep -q '^enabled$'; then
     log_append "[TWGCB-01-012-0245][PASS] firewalld service is enabled"
     set_flag flag_245 1
@@ -3611,7 +3719,9 @@ else
     set_flag flag_245 0
 fi
 
-# TWGCB-01-012-0246: iptables/ip6tables disabled when using firewalld
+# ======================================
+# TWGCB-01-012-0246
+# 使用firewalld時iptables及ip6tables須停用
 if [ $flag_244 -ne 1 ]; then
     log_append "[TWGCB-01-012-0246][SKIP] firewalld not installed; skipping iptables check"
     set_flag flag_246 2
@@ -3631,7 +3741,9 @@ else
     fi
 fi
 
-# TWGCB-01-012-0247: nftables disabled when using firewalld
+# ======================================
+# TWGCB-01-012-0247
+# 使用firewalld時nftables須停用
 if [ $flag_244 -ne 1 ]; then
     log_append "[TWGCB-01-012-0247][SKIP] firewalld not installed; skipping nftables-disable check"
     set_flag flag_247 2
@@ -3645,7 +3757,9 @@ else
     fi
 fi
 
-# TWGCB-01-012-0248: firewalld default zone set
+# ======================================
+# TWGCB-01-012-0248
+# firewalld須設定預設區域
 if [ $flag_244 -ne 1 ]; then
     log_append "[TWGCB-01-012-0248][SKIP] firewalld not installed"
     set_flag flag_248 2
@@ -3660,7 +3774,9 @@ else
     fi
 fi
 
-# TWGCB-01-012-0249: nftables service enabled (when using nftables)
+# ======================================
+# TWGCB-01-012-0249
+# 使用nftables時nftables服務須設定為啟用
 if [ $flag_245 -eq 1 ]; then
     log_append "[TWGCB-01-012-0249][SKIP] firewalld is in use; nftables section not applicable"
     set_flag flag_249 2
@@ -3674,7 +3790,9 @@ else
     fi
 fi
 
-# TWGCB-01-012-0250: firewalld disabled when using nftables
+# ======================================
+# TWGCB-01-012-0250
+# 使用nftables時firewalld須停用
 if [ $flag_245 -eq 1 ]; then
     log_append "[TWGCB-01-012-0250][SKIP] firewalld is in use; nftables section not applicable"
     set_flag flag_250 2
@@ -3688,7 +3806,9 @@ else
     fi
 fi
 
-# TWGCB-01-012-0251: nftables has at least 1 table (when using nftables)
+# ======================================
+# TWGCB-01-012-0251
+# 使用nftables時需至少設定1個table
 if [ $flag_245 -eq 1 ]; then
     log_append "[TWGCB-01-012-0251][SKIP] firewalld is in use; nftables section not applicable"
     set_flag flag_251 2
@@ -3700,6 +3820,896 @@ else
         log_append "[TWGCB-01-012-0251][FAIL] nftables has no tables configured"
         set_flag flag_251 0
     fi
+fi
+
+# ======================================
+# TWGCB-01-012-0252
+# nftables需建立預設拒絕規則
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-012-0252][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_252 2
+else
+    nft_drop_ok=1
+    for chain in input forward output; do
+        if ! nft list ruleset 2>/dev/null | grep -iA 10 "type filter hook $chain" | grep -qi "policy drop"; then
+            nft_drop_ok=0
+            break
+        fi
+    done
+    if [ $nft_drop_ok -eq 1 ]; then
+        log_append "[TWGCB-01-012-0252][PASS] nftables default deny policy is set for all chains"
+        set_flag flag_252 1
+    else
+        log_append "[TWGCB-01-012-0252][FAIL] nftables default deny policy is not set for all chains"
+        set_flag flag_252 0
+    fi
+fi
+
+# ======================================
+# TWGCB-01-012-0253
+# nftables需設定開機載入規則
+if [ $flag_245 -eq 1 ]; then
+    log_append "[TWGCB-01-012-0253][SKIP] firewalld is in use; nftables section not applicable"
+    set_flag flag_253 2
+else
+    if grep -qE '^include "/etc/nftables/main.nft"' /etc/sysconfig/nftables.conf 2>/dev/null; then
+        log_append "[TWGCB-01-012-0253][PASS] nftables rules are configured to load on boot"
+        set_flag flag_253 1
+    else
+        log_append "[TWGCB-01-012-0253][FAIL] nftables rules are not configured to load on boot"
+        set_flag flag_253 0
+    fi
+fi
+
+# ======================================
+# TWGCB-01-012-0254
+# sshd守護程序需設定為啟用
+if systemctl is-enabled sshd 2>/dev/null | grep -q '^enabled$'; then
+    log_append "[TWGCB-01-012-0254][PASS] sshd service is enabled"
+    set_flag flag_254 1
+else
+    log_append "[TWGCB-01-012-0254][FAIL] sshd service is not enabled"
+    set_flag flag_254 0
+fi
+
+# ======================================
+# TWGCB-01-012-0255
+# SSH協定版本需設定為Protocol 2
+# RHEL 9 (OpenSSH 8+) 預設強制使用 Protocol 2，不支援 Protocol 1
+if grep -rqiE "^[[:space:]]*Protocol[[:space:]]+1" /etc/ssh/sshd_config /etc/ssh/sshd_config.d/ 2>/dev/null; then
+    log_append "[TWGCB-01-012-0255][FAIL] SSH Protocol 1 is configured in sshd_config"
+    set_flag flag_255 0
+else
+    log_append "[TWGCB-01-012-0255][PASS] SSH Protocol 2 enforced (Protocol 1 not found)"
+    set_flag flag_255 1
+fi
+
+# ======================================
+# TWGCB-01-012-0256
+# /etc/ssh/sshd_config檔案所有權需設定為root:root
+sshd_cfg_owner=$(stat -c "%U:%G" /etc/ssh/sshd_config 2>/dev/null)
+if [ "$sshd_cfg_owner" = "root:root" ]; then
+    log_append "[TWGCB-01-012-0256][PASS] /etc/ssh/sshd_config ownership is root:root"
+    set_flag flag_256 1
+else
+    log_append "[TWGCB-01-012-0256][FAIL] /etc/ssh/sshd_config ownership is $sshd_cfg_owner (expected root:root)"
+    set_flag flag_256 0
+fi
+
+# ======================================
+# TWGCB-01-012-0257
+# /etc/ssh/sshd_config檔案權限需設定為600或更低
+sshd_cfg_perm=$(stat -c "%a" /etc/ssh/sshd_config 2>/dev/null)
+if [ -n "$sshd_cfg_perm" ] && [ "$((8#$sshd_cfg_perm))" -le "$((8#600))" ]; then
+    log_append "[TWGCB-01-012-0257][PASS] /etc/ssh/sshd_config permissions are $sshd_cfg_perm (600 or lower)"
+    set_flag flag_257 1
+else
+    log_append "[TWGCB-01-012-0257][FAIL] /etc/ssh/sshd_config permissions are $sshd_cfg_perm (should be 600 or lower)"
+    set_flag flag_257 0
+fi
+
+# ======================================
+# TWGCB-01-012-0258
+# 限制存取SSH (AllowUsers/AllowGroups/DenyUsers/DenyGroups)
+if grep -rqiE "^[[:space:]]*(AllowUsers|AllowGroups|DenyUsers|DenyGroups)[[:space:]]+" /etc/ssh/sshd_config /etc/ssh/sshd_config.d/ 2>/dev/null; then
+    log_append "[TWGCB-01-012-0258][PASS] SSH access restriction is configured"
+    set_flag flag_258 1
+else
+    log_append "[TWGCB-01-012-0258][FAIL] SSH access restriction is not configured (no AllowUsers/AllowGroups/DenyUsers/DenyGroups)"
+    set_flag flag_258 0
+fi
+
+# ======================================
+# TWGCB-01-012-0259
+# SSH主機私鑰檔案所有權需設定為root:ssh_keys
+ssh_privkey_fail=0
+while IFS= read -r -d '' keyfile; do
+    owner=$(stat -c "%U:%G" "$keyfile" 2>/dev/null)
+    if [ "$owner" != "root:ssh_keys" ]; then
+        log_append "[TWGCB-01-012-0259][FAIL] $keyfile ownership is $owner (expected root:ssh_keys)"
+        ssh_privkey_fail=1
+    fi
+done < <(find /etc/ssh -name "ssh_host_*_key" ! -name "*.pub" -print0 2>/dev/null)
+if [ $ssh_privkey_fail -eq 0 ]; then
+    log_append "[TWGCB-01-012-0259][PASS] All SSH host private keys have ownership root:ssh_keys"
+    set_flag flag_259 1
+else
+    set_flag flag_259 0
+fi
+
+# ======================================
+# TWGCB-01-012-0260
+# SSH主機私鑰檔案權限需設定為640或更低
+ssh_privkey_perm_fail=0
+while IFS= read -r -d '' keyfile; do
+    perm=$(stat -c "%a" "$keyfile" 2>/dev/null)
+    if [ -n "$perm" ] && [ "$((8#$perm))" -gt "$((8#640))" ]; then
+        log_append "[TWGCB-01-012-0260][FAIL] $keyfile permissions are $perm (should be 640 or lower)"
+        ssh_privkey_perm_fail=1
+    fi
+done < <(find /etc/ssh -name "ssh_host_*_key" ! -name "*.pub" -print0 2>/dev/null)
+if [ $ssh_privkey_perm_fail -eq 0 ]; then
+    log_append "[TWGCB-01-012-0260][PASS] All SSH host private keys have permissions 640 or lower"
+    set_flag flag_260 1
+else
+    set_flag flag_260 0
+fi
+
+# ======================================
+# TWGCB-01-012-0261
+# SSH主機公鑰檔案所有權需設定為root:root
+ssh_pubkey_fail=0
+while IFS= read -r -d '' pubfile; do
+    owner=$(stat -c "%U:%G" "$pubfile" 2>/dev/null)
+    if [ "$owner" != "root:root" ]; then
+        log_append "[TWGCB-01-012-0261][FAIL] $pubfile ownership is $owner (expected root:root)"
+        ssh_pubkey_fail=1
+    fi
+done < <(find /etc/ssh -name "ssh_host_*_key.pub" -print0 2>/dev/null)
+if [ $ssh_pubkey_fail -eq 0 ]; then
+    log_append "[TWGCB-01-012-0261][PASS] All SSH host public keys have ownership root:root"
+    set_flag flag_261 1
+else
+    set_flag flag_261 0
+fi
+
+# ======================================
+# TWGCB-01-012-0262
+# SSH主機公鑰檔案權限需設定為644或更低
+ssh_pubkey_perm_fail=0
+while IFS= read -r -d '' pubfile; do
+    perm=$(stat -c "%a" "$pubfile" 2>/dev/null)
+    if [ -n "$perm" ] && [ "$((8#$perm))" -gt "$((8#644))" ]; then
+        log_append "[TWGCB-01-012-0262][FAIL] $pubfile permissions are $perm (should be 644 or lower)"
+        ssh_pubkey_perm_fail=1
+    fi
+done < <(find /etc/ssh -name "ssh_host_*_key.pub" -print0 2>/dev/null)
+if [ $ssh_pubkey_perm_fail -eq 0 ]; then
+    log_append "[TWGCB-01-012-0262][PASS] All SSH host public keys have permissions 644 or lower"
+    set_flag flag_262 1
+else
+    set_flag flag_262 0
+fi
+
+# ======================================
+# TWGCB-01-012-0263
+# SSH加密演算法需設定為aes-ctr系列
+# 檢查有效加密演算法，不得含有CBC模式或其他弱加密
+sshd_ciphers=$(sshd -T 2>/dev/null | grep "^ciphers" | awk '{print $2}')
+if [ -n "$sshd_ciphers" ]; then
+    if echo "$sshd_ciphers" | grep -qiE "(3des|blowfish|arcfour|rc4|cbc)"; then
+        log_append "[TWGCB-01-012-0263][FAIL] SSH ciphers contain weak algorithms: $sshd_ciphers"
+        set_flag flag_263 0
+    else
+        log_append "[TWGCB-01-012-0263][PASS] SSH ciphers do not contain weak algorithms: $sshd_ciphers"
+        set_flag flag_263 1
+    fi
+else
+    log_append "[TWGCB-01-012-0263][FAIL] Unable to determine SSH cipher configuration"
+    set_flag flag_263 0
+fi
+
+# ======================================
+# TWGCB-01-012-0264
+# SSH日誌記錄等級需設定為VERBOSE或INFO
+sshd_loglevel=$(sshd -T 2>/dev/null | grep "^loglevel" | awk '{print $2}' | tr '[:lower:]' '[:upper:]')
+if [ "$sshd_loglevel" = "VERBOSE" ] || [ "$sshd_loglevel" = "INFO" ]; then
+    log_append "[TWGCB-01-012-0264][PASS] SSH LogLevel is $sshd_loglevel"
+    set_flag flag_264 1
+else
+    log_append "[TWGCB-01-012-0264][FAIL] SSH LogLevel is $sshd_loglevel (should be VERBOSE or INFO)"
+    set_flag flag_264 0
+fi
+
+# ======================================
+# TWGCB-01-012-0265
+# SSH X11Forwarding需設定為no
+sshd_x11=$(sshd -T 2>/dev/null | grep "^x11forwarding" | awk '{print $2}')
+if [ "$sshd_x11" = "no" ]; then
+    log_append "[TWGCB-01-012-0265][PASS] SSH X11Forwarding is no"
+    set_flag flag_265 1
+else
+    log_append "[TWGCB-01-012-0265][FAIL] SSH X11Forwarding is $sshd_x11 (should be no)"
+    set_flag flag_265 0
+fi
+
+# ======================================
+# TWGCB-01-012-0266
+# SSH MaxAuthTries需設定為4以下且大於0
+sshd_maxauth=$(sshd -T 2>/dev/null | grep "^maxauthtries" | awk '{print $2}')
+if [ -n "$sshd_maxauth" ] && [ "$sshd_maxauth" -gt 0 ] && [ "$sshd_maxauth" -le 4 ]; then
+    log_append "[TWGCB-01-012-0266][PASS] SSH MaxAuthTries is $sshd_maxauth"
+    set_flag flag_266 1
+else
+    log_append "[TWGCB-01-012-0266][FAIL] SSH MaxAuthTries is $sshd_maxauth (should be 1-4)"
+    set_flag flag_266 0
+fi
+
+# ======================================
+# TWGCB-01-012-0267
+# SSH IgnoreRhosts需設定為yes
+sshd_ignorerhosts=$(sshd -T 2>/dev/null | grep "^ignorerhosts" | awk '{print $2}')
+if [ "$sshd_ignorerhosts" = "yes" ]; then
+    log_append "[TWGCB-01-012-0267][PASS] SSH IgnoreRhosts is yes"
+    set_flag flag_267 1
+else
+    log_append "[TWGCB-01-012-0267][FAIL] SSH IgnoreRhosts is $sshd_ignorerhosts (should be yes)"
+    set_flag flag_267 0
+fi
+
+# ======================================
+# TWGCB-01-012-0268
+# SSH HostbasedAuthentication需設定為no
+sshd_hostbased=$(sshd -T 2>/dev/null | grep "^hostbasedauthentication" | awk '{print $2}')
+if [ "$sshd_hostbased" = "no" ]; then
+    log_append "[TWGCB-01-012-0268][PASS] SSH HostbasedAuthentication is no"
+    set_flag flag_268 1
+else
+    log_append "[TWGCB-01-012-0268][FAIL] SSH HostbasedAuthentication is $sshd_hostbased (should be no)"
+    set_flag flag_268 0
+fi
+
+# ======================================
+# TWGCB-01-012-0269
+# SSH PermitRootLogin需設定為no
+sshd_rootlogin=$(sshd -T 2>/dev/null | grep "^permitrootlogin" | awk '{print $2}')
+if [ "$sshd_rootlogin" = "no" ]; then
+    log_append "[TWGCB-01-012-0269][PASS] SSH PermitRootLogin is no"
+    set_flag flag_269 1
+else
+    log_append "[TWGCB-01-012-0269][FAIL] SSH PermitRootLogin is $sshd_rootlogin (should be no)"
+    set_flag flag_269 0
+fi
+
+# ======================================
+# TWGCB-01-012-0270
+# SSH PermitEmptyPasswords需設定為no
+sshd_emptypw=$(sshd -T 2>/dev/null | grep "^permitemptypasswords" | awk '{print $2}')
+if [ "$sshd_emptypw" = "no" ]; then
+    log_append "[TWGCB-01-012-0270][PASS] SSH PermitEmptyPasswords is no"
+    set_flag flag_270 1
+else
+    log_append "[TWGCB-01-012-0270][FAIL] SSH PermitEmptyPasswords is $sshd_emptypw (should be no)"
+    set_flag flag_270 0
+fi
+
+# ======================================
+# TWGCB-01-012-0271
+# SSH PermitUserEnvironment需設定為no
+sshd_userenv=$(sshd -T 2>/dev/null | grep "^permituserenvironment" | awk '{print $2}')
+if [ "$sshd_userenv" = "no" ]; then
+    log_append "[TWGCB-01-012-0271][PASS] SSH PermitUserEnvironment is no"
+    set_flag flag_271 1
+else
+    log_append "[TWGCB-01-012-0271][FAIL] SSH PermitUserEnvironment is $sshd_userenv (should be no)"
+    set_flag flag_271 0
+fi
+
+# ======================================
+# TWGCB-01-012-0272
+# SSH逾時時間需設定ClientAliveInterval<=600且ClientAliveCountMax=1
+sshd_cai=$(sshd -T 2>/dev/null | grep "^clientaliveinterval" | awk '{print $2}')
+sshd_cac=$(sshd -T 2>/dev/null | grep "^clientalivecountmax" | awk '{print $2}')
+if [ -n "$sshd_cai" ] && [ "$sshd_cai" -gt 0 ] && [ "$sshd_cai" -le 600 ] && [ "$sshd_cac" -eq 1 ]; then
+    log_append "[TWGCB-01-012-0272][PASS] SSH ClientAliveInterval=$sshd_cai ClientAliveCountMax=$sshd_cac"
+    set_flag flag_272 1
+else
+    log_append "[TWGCB-01-012-0272][FAIL] SSH timeout: ClientAliveInterval=$sshd_cai ClientAliveCountMax=$sshd_cac (need Interval 1-600, CountMax=1)"
+    set_flag flag_272 0
+fi
+
+# ======================================
+# TWGCB-01-012-0273
+# SSH LoginGraceTime需設定為60以下且大於0
+sshd_grace=$(sshd -T 2>/dev/null | grep "^logingracetime" | awk '{print $2}')
+if [ -n "$sshd_grace" ] && [ "$sshd_grace" -gt 0 ] && [ "$sshd_grace" -le 60 ]; then
+    log_append "[TWGCB-01-012-0273][PASS] SSH LoginGraceTime is $sshd_grace"
+    set_flag flag_273 1
+else
+    log_append "[TWGCB-01-012-0273][FAIL] SSH LoginGraceTime is $sshd_grace (should be 1-60)"
+    set_flag flag_273 0
+fi
+
+# ======================================
+# TWGCB-01-012-0274
+# SSH UsePAM需設定為yes
+sshd_usepam=$(sshd -T 2>/dev/null | grep "^usepam" | awk '{print $2}')
+if [ "$sshd_usepam" = "yes" ]; then
+    log_append "[TWGCB-01-012-0274][PASS] SSH UsePAM is yes"
+    set_flag flag_274 1
+else
+    log_append "[TWGCB-01-012-0274][FAIL] SSH UsePAM is $sshd_usepam (should be yes)"
+    set_flag flag_274 0
+fi
+
+# ======================================
+# TWGCB-01-012-0275
+# SSH AllowTcpForwarding需設定為no
+sshd_tcpfwd=$(sshd -T 2>/dev/null | grep "^allowtcpforwarding" | awk '{print $2}')
+if [ "$sshd_tcpfwd" = "no" ]; then
+    log_append "[TWGCB-01-012-0275][PASS] SSH AllowTcpForwarding is no"
+    set_flag flag_275 1
+else
+    log_append "[TWGCB-01-012-0275][FAIL] SSH AllowTcpForwarding is $sshd_tcpfwd (should be no)"
+    set_flag flag_275 0
+fi
+
+# ======================================
+# TWGCB-01-012-0276
+# SSH MaxStartups需設定為10:30:60
+sshd_maxstart=$(sshd -T 2>/dev/null | grep "^maxstartups" | awk '{print $2}')
+if [ "$sshd_maxstart" = "10:30:60" ]; then
+    log_append "[TWGCB-01-012-0276][PASS] SSH MaxStartups is 10:30:60"
+    set_flag flag_276 1
+else
+    log_append "[TWGCB-01-012-0276][FAIL] SSH MaxStartups is $sshd_maxstart (should be 10:30:60)"
+    set_flag flag_276 0
+fi
+
+# ======================================
+# TWGCB-01-012-0277
+# SSH MaxSessions需設定為4以下且大於0
+sshd_maxsess=$(sshd -T 2>/dev/null | grep "^maxsessions" | awk '{print $2}')
+if [ -n "$sshd_maxsess" ] && [ "$sshd_maxsess" -gt 0 ] && [ "$sshd_maxsess" -le 4 ]; then
+    log_append "[TWGCB-01-012-0277][PASS] SSH MaxSessions is $sshd_maxsess"
+    set_flag flag_277 1
+else
+    log_append "[TWGCB-01-012-0277][FAIL] SSH MaxSessions is $sshd_maxsess (should be 1-4)"
+    set_flag flag_277 0
+fi
+
+# ======================================
+# TWGCB-01-012-0278
+# SSH StrictModes需設定為yes
+sshd_strict=$(sshd -T 2>/dev/null | grep "^strictmodes" | awk '{print $2}')
+if [ "$sshd_strict" = "yes" ]; then
+    log_append "[TWGCB-01-012-0278][PASS] SSH StrictModes is yes"
+    set_flag flag_278 1
+else
+    log_append "[TWGCB-01-012-0278][FAIL] SSH StrictModes is $sshd_strict (should be yes)"
+    set_flag flag_278 0
+fi
+
+# ======================================
+# TWGCB-01-012-0279
+# SSH Compression需設定為delayed或no
+sshd_compress=$(sshd -T 2>/dev/null | grep "^compression" | awk '{print $2}')
+if [ "$sshd_compress" = "delayed" ] || [ "$sshd_compress" = "no" ]; then
+    log_append "[TWGCB-01-012-0279][PASS] SSH Compression is $sshd_compress"
+    set_flag flag_279 1
+else
+    log_append "[TWGCB-01-012-0279][FAIL] SSH Compression is $sshd_compress (should be delayed or no)"
+    set_flag flag_279 0
+fi
+
+# ======================================
+# TWGCB-01-012-0280
+# SSH IgnoreUserKnownHosts需設定為yes
+sshd_ignknown=$(sshd -T 2>/dev/null | grep "^ignoreuserknownhosts" | awk '{print $2}')
+if [ "$sshd_ignknown" = "yes" ]; then
+    log_append "[TWGCB-01-012-0280][PASS] SSH IgnoreUserKnownHosts is yes"
+    set_flag flag_280 1
+else
+    log_append "[TWGCB-01-012-0280][FAIL] SSH IgnoreUserKnownHosts is $sshd_ignknown (should be yes)"
+    set_flag flag_280 0
+fi
+
+# ======================================
+# TWGCB-01-012-0281
+# SSH PrintLastLog需設定為yes
+sshd_printlast=$(sshd -T 2>/dev/null | grep "^printlastlog" | awk '{print $2}')
+if [ "$sshd_printlast" = "yes" ]; then
+    log_append "[TWGCB-01-012-0281][PASS] SSH PrintLastLog is yes"
+    set_flag flag_281 1
+else
+    log_append "[TWGCB-01-012-0281][FAIL] SSH PrintLastLog is $sshd_printlast (should be yes)"
+    set_flag flag_281 0
+fi
+
+# ======================================
+# TWGCB-01-012-0282
+# 需移除shosts.equiv檔案
+if [ -e /etc/shosts.equiv ]; then
+    log_append "[TWGCB-01-012-0282][FAIL] /etc/shosts.equiv exists and should be removed"
+    set_flag flag_282 0
+else
+    log_append "[TWGCB-01-012-0282][PASS] /etc/shosts.equiv does not exist"
+    set_flag flag_282 1
+fi
+
+# ======================================
+# TWGCB-01-012-0283
+# 需移除.shosts檔案
+shosts_found=$(find /root /home -name ".shosts" 2>/dev/null)
+if [ -z "$shosts_found" ]; then
+    log_append "[TWGCB-01-012-0283][PASS] No .shosts files found in home directories"
+    set_flag flag_283 1
+else
+    log_append "[TWGCB-01-012-0283][FAIL] .shosts files found: $shosts_found"
+    set_flag flag_283 0
+fi
+
+# ======================================
+# TWGCB-01-012-0284
+# SSH不得覆寫全系統加密原則
+crypto_policy=$(update-crypto-policies --show 2>/dev/null)
+sshd_crypto_override=$(grep -E "^[[:space:]]*CRYPTO_POLICY=" /etc/sysconfig/sshd 2>/dev/null)
+if echo "$crypto_policy" | grep -qiE "LEGACY"; then
+    log_append "[TWGCB-01-012-0284][FAIL] System crypto policy is LEGACY which weakens SSH security"
+    set_flag flag_284 0
+elif [ -n "$sshd_crypto_override" ]; then
+    log_append "[TWGCB-01-012-0284][FAIL] SSH has manual crypto policy override in /etc/sysconfig/sshd: $sshd_crypto_override"
+    set_flag flag_284 0
+else
+    log_append "[TWGCB-01-012-0284][PASS] SSH uses system crypto policy ($crypto_policy), no override detected"
+    set_flag flag_284 1
+fi
+
+# ======================================
+# TWGCB-01-012-0315
+# SSH需停用GSSAPI驗證
+sshd_gssapi=$(sshd -T 2>/dev/null | grep "^gssapiauthentication" | awk '{print $2}')
+if [ "$sshd_gssapi" = "no" ]; then
+    log_append "[TWGCB-01-012-0315][PASS] SSH GSSAPIAuthentication is no"
+    set_flag flag_315 1
+else
+    log_append "[TWGCB-01-012-0315][FAIL] SSH GSSAPIAuthentication is $sshd_gssapi (should be no)"
+    set_flag flag_315 0
+fi
+
+# ======================================
+# TWGCB-01-012-0285
+# freevxfs檔案系統需設定為停用
+if ! modinfo freevxfs &>/dev/null && ! lsmod | grep -q "^freevxfs"; then
+    log_append "[TWGCB-01-012-0285][PASS] freevxfs module not available in kernel"
+    set_flag flag_285 1
+elif grep -q "^install freevxfs /bin/true" /etc/modprobe.d/freevxfs.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0285][PASS] freevxfs is disabled via modprobe"
+    set_flag flag_285 1
+else
+    log_append "[TWGCB-01-012-0285][FAIL] freevxfs is available but not disabled"
+    set_flag flag_285 0
+fi
+
+# ======================================
+# TWGCB-01-012-0286
+# hfs檔案系統需設定為停用
+if ! modinfo hfs &>/dev/null && ! lsmod | grep -q "^hfs"; then
+    log_append "[TWGCB-01-012-0286][PASS] hfs module not available in kernel"
+    set_flag flag_286 1
+elif grep -q "^install hfs /bin/true" /etc/modprobe.d/hfs.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0286][PASS] hfs is disabled via modprobe"
+    set_flag flag_286 1
+else
+    log_append "[TWGCB-01-012-0286][FAIL] hfs is available but not disabled"
+    set_flag flag_286 0
+fi
+
+# ======================================
+# TWGCB-01-012-0287
+# hfs plus檔案系統需設定為停用
+if ! modinfo hfsplus &>/dev/null && ! lsmod | grep -q "^hfsplus"; then
+    log_append "[TWGCB-01-012-0287][PASS] hfsplus module not available in kernel"
+    set_flag flag_287 1
+elif grep -q "^install hfsplus /bin/true" /etc/modprobe.d/hfsplus.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0287][PASS] hfsplus is disabled via modprobe"
+    set_flag flag_287 1
+else
+    log_append "[TWGCB-01-012-0287][FAIL] hfsplus is available but not disabled"
+    set_flag flag_287 0
+fi
+
+# ======================================
+# TWGCB-01-012-0288
+# jffs2檔案系統需設定為停用
+if ! modinfo jffs2 &>/dev/null && ! lsmod | grep -q "^jffs2"; then
+    log_append "[TWGCB-01-012-0288][PASS] jffs2 module not available in kernel"
+    set_flag flag_288 1
+elif grep -q "^install jffs2 /bin/true" /etc/modprobe.d/jffs2.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0288][PASS] jffs2 is disabled via modprobe"
+    set_flag flag_288 1
+else
+    log_append "[TWGCB-01-012-0288][FAIL] jffs2 is available but not disabled"
+    set_flag flag_288 0
+fi
+
+# ======================================
+# TWGCB-01-012-0289
+# afs檔案系統需設定為停用
+if ! modinfo afs &>/dev/null && ! lsmod | grep -q "^afs"; then
+    log_append "[TWGCB-01-012-0289][PASS] afs module not available in kernel"
+    set_flag flag_289 1
+elif grep -q "^install afs /bin/true" /etc/modprobe.d/afs.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0289][PASS] afs is disabled via modprobe"
+    set_flag flag_289 1
+else
+    log_append "[TWGCB-01-012-0289][FAIL] afs is available but not disabled"
+    set_flag flag_289 0
+fi
+
+# ======================================
+# TWGCB-01-012-0290
+# ceph檔案系統需設定為停用
+if ! modinfo ceph &>/dev/null && ! lsmod | grep -q "^ceph"; then
+    log_append "[TWGCB-01-012-0290][PASS] ceph module not available in kernel"
+    set_flag flag_290 1
+elif grep -q "^install ceph /bin/true" /etc/modprobe.d/ceph.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0290][PASS] ceph is disabled via modprobe"
+    set_flag flag_290 1
+else
+    log_append "[TWGCB-01-012-0290][FAIL] ceph is available but not disabled"
+    set_flag flag_290 0
+fi
+
+# ======================================
+# TWGCB-01-012-0291
+# cifs檔案系統需設定為停用
+if ! modinfo cifs &>/dev/null && ! lsmod | grep -q "^cifs"; then
+    log_append "[TWGCB-01-012-0291][PASS] cifs module not available in kernel"
+    set_flag flag_291 1
+elif grep -q "^install cifs /bin/true" /etc/modprobe.d/cifs.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0291][PASS] cifs is disabled via modprobe"
+    set_flag flag_291 1
+else
+    log_append "[TWGCB-01-012-0291][FAIL] cifs is available but not disabled"
+    set_flag flag_291 0
+fi
+
+# ======================================
+# TWGCB-01-012-0292
+# exfat檔案系統需設定為停用
+if ! modinfo exfat &>/dev/null && ! lsmod | grep -q "^exfat"; then
+    log_append "[TWGCB-01-012-0292][PASS] exfat module not available in kernel"
+    set_flag flag_292 1
+elif grep -q "^install exfat /bin/true" /etc/modprobe.d/exfat.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0292][PASS] exfat is disabled via modprobe"
+    set_flag flag_292 1
+else
+    log_append "[TWGCB-01-012-0292][FAIL] exfat is available but not disabled"
+    set_flag flag_292 0
+fi
+
+# ======================================
+# TWGCB-01-012-0293
+# ext檔案系統需設定為停用
+if ! modinfo ext &>/dev/null && ! lsmod | grep -q "^ext[[:space:]]"; then
+    log_append "[TWGCB-01-012-0293][PASS] ext module not available in kernel"
+    set_flag flag_293 1
+elif grep -q "^install ext /bin/true" /etc/modprobe.d/ext.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0293][PASS] ext is disabled via modprobe"
+    set_flag flag_293 1
+else
+    log_append "[TWGCB-01-012-0293][FAIL] ext is available but not disabled"
+    set_flag flag_293 0
+fi
+
+# ======================================
+# TWGCB-01-012-0294
+# fat檔案系統需設定為停用
+if ! modinfo fat &>/dev/null && ! lsmod | grep -q "^fat[[:space:]]"; then
+    log_append "[TWGCB-01-012-0294][PASS] fat module not available in kernel"
+    set_flag flag_294 1
+elif grep -q "^install fat /bin/true" /etc/modprobe.d/fat.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0294][PASS] fat is disabled via modprobe"
+    set_flag flag_294 1
+else
+    log_append "[TWGCB-01-012-0294][FAIL] fat is available but not disabled"
+    set_flag flag_294 0
+fi
+
+# ======================================
+# TWGCB-01-012-0295
+# fscache檔案系統需設定為停用
+if ! modinfo fscache &>/dev/null && ! lsmod | grep -q "^fscache"; then
+    log_append "[TWGCB-01-012-0295][PASS] fscache module not available in kernel"
+    set_flag flag_295 1
+elif grep -q "^install fscache /bin/true" /etc/modprobe.d/fscache.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0295][PASS] fscache is disabled via modprobe"
+    set_flag flag_295 1
+else
+    log_append "[TWGCB-01-012-0295][FAIL] fscache is available but not disabled"
+    set_flag flag_295 0
+fi
+
+# ======================================
+# TWGCB-01-012-0296
+# fuse檔案系統需設定為停用
+if ! modinfo fuse &>/dev/null && ! lsmod | grep -q "^fuse"; then
+    log_append "[TWGCB-01-012-0296][PASS] fuse module not available in kernel"
+    set_flag flag_296 1
+elif grep -q "^install fuse /bin/true" /etc/modprobe.d/fuse.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0296][PASS] fuse is disabled via modprobe"
+    set_flag flag_296 1
+else
+    log_append "[TWGCB-01-012-0296][FAIL] fuse is available but not disabled"
+    set_flag flag_296 0
+fi
+
+# ======================================
+# TWGCB-01-012-0297
+# gfs2檔案系統需設定為停用
+if ! modinfo gfs2 &>/dev/null && ! lsmod | grep -q "^gfs2"; then
+    log_append "[TWGCB-01-012-0297][PASS] gfs2 module not available in kernel"
+    set_flag flag_297 1
+elif grep -q "^install gfs2 /bin/true" /etc/modprobe.d/gfs2.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0297][PASS] gfs2 is disabled via modprobe"
+    set_flag flag_297 1
+else
+    log_append "[TWGCB-01-012-0297][FAIL] gfs2 is available but not disabled"
+    set_flag flag_297 0
+fi
+
+# ======================================
+# TWGCB-01-012-0298
+# nfs_common需設定為停用
+if ! modinfo nfs &>/dev/null && ! lsmod | grep -q "^nfs[[:space:]]"; then
+    log_append "[TWGCB-01-012-0298][PASS] nfs (nfs_common) module not available in kernel"
+    set_flag flag_298 1
+elif grep -q "^install nfs /bin/true" /etc/modprobe.d/nfs_common.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0298][PASS] nfs (nfs_common) is disabled via modprobe"
+    set_flag flag_298 1
+else
+    log_append "[TWGCB-01-012-0298][FAIL] nfs (nfs_common) is available but not disabled"
+    set_flag flag_298 0
+fi
+
+# ======================================
+# TWGCB-01-012-0299
+# nfsd需設定為停用
+if ! modinfo nfsd &>/dev/null && ! lsmod | grep -q "^nfsd"; then
+    log_append "[TWGCB-01-012-0299][PASS] nfsd module not available in kernel"
+    set_flag flag_299 1
+elif grep -q "^install nfsd /bin/true" /etc/modprobe.d/nfsd.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0299][PASS] nfsd is disabled via modprobe"
+    set_flag flag_299 1
+else
+    log_append "[TWGCB-01-012-0299][FAIL] nfsd is available but not disabled"
+    set_flag flag_299 0
+fi
+
+# ======================================
+# TWGCB-01-012-0300
+# smbfs_common需設定為停用
+if ! modinfo smbfs_common &>/dev/null && ! lsmod | grep -q "^smbfs_common"; then
+    log_append "[TWGCB-01-012-0300][PASS] smbfs_common module not available in kernel"
+    set_flag flag_300 1
+elif grep -q "^install smbfs_common /bin/true" /etc/modprobe.d/smbfs_common.conf 2>/dev/null; then
+    log_append "[TWGCB-01-012-0300][PASS] smbfs_common is disabled via modprobe"
+    set_flag flag_300 1
+else
+    log_append "[TWGCB-01-012-0300][FAIL] smbfs_common is available but not disabled"
+    set_flag flag_300 0
+fi
+
+# ======================================
+# TWGCB-01-012-0301
+# /etc/shells檔案所有權需設定為root:root
+shells_owner=$(stat -c "%U:%G" /etc/shells 2>/dev/null)
+if [ "$shells_owner" = "root:root" ]; then
+    log_append "[TWGCB-01-012-0301][PASS] /etc/shells ownership is root:root"
+    set_flag flag_301 1
+else
+    log_append "[TWGCB-01-012-0301][FAIL] /etc/shells ownership is $shells_owner (expected root:root)"
+    set_flag flag_301 0
+fi
+
+# ======================================
+# TWGCB-01-012-0302
+# /etc/shells檔案權限需設定為644或更低
+shells_perm=$(stat -c "%a" /etc/shells 2>/dev/null)
+if [ -n "$shells_perm" ] && [ "$((8#$shells_perm))" -le "$((8#644))" ]; then
+    log_append "[TWGCB-01-012-0302][PASS] /etc/shells permissions are $shells_perm (644 or lower)"
+    set_flag flag_302 1
+else
+    log_append "[TWGCB-01-012-0302][FAIL] /etc/shells permissions are $shells_perm (should be 644 or lower)"
+    set_flag flag_302 0
+fi
+
+# ======================================
+# TWGCB-01-012-0303
+# /etc/security/opasswd及opasswd.old所有權需設定為root:root
+opasswd_fail=0
+for ofile in /etc/security/opasswd /etc/security/opasswd.old; do
+    if [ -f "$ofile" ]; then
+        oowner=$(stat -c "%U:%G" "$ofile" 2>/dev/null)
+        if [ "$oowner" != "root:root" ]; then
+            log_append "[TWGCB-01-012-0303][FAIL] $ofile ownership is $oowner (expected root:root)"
+            opasswd_fail=1
+        fi
+    fi
+done
+if [ $opasswd_fail -eq 0 ]; then
+    log_append "[TWGCB-01-012-0303][PASS] /etc/security/opasswd files have correct ownership (root:root)"
+    set_flag flag_303 1
+else
+    set_flag flag_303 0
+fi
+
+# ======================================
+# TWGCB-01-012-0304
+# /etc/security/opasswd及opasswd.old權限需設定為644或更低
+opasswd_perm_fail=0
+for ofile in /etc/security/opasswd /etc/security/opasswd.old; do
+    if [ -f "$ofile" ]; then
+        operm=$(stat -c "%a" "$ofile" 2>/dev/null)
+        if [ -n "$operm" ] && [ "$((8#$operm))" -gt "$((8#644))" ]; then
+            log_append "[TWGCB-01-012-0304][FAIL] $ofile permissions are $operm (should be 644 or lower)"
+            opasswd_perm_fail=1
+        fi
+    fi
+done
+if [ $opasswd_perm_fail -eq 0 ]; then
+    log_append "[TWGCB-01-012-0304][PASS] /etc/security/opasswd files have correct permissions (644 or lower)"
+    set_flag flag_304 1
+else
+    set_flag flag_304 0
+fi
+
+# ======================================
+# TWGCB-01-012-0305
+# /etc/shells中不應存在nologin
+if grep -q "nologin" /etc/shells 2>/dev/null; then
+    log_append "[TWGCB-01-012-0305][FAIL] nologin entry found in /etc/shells (should be removed)"
+    set_flag flag_305 0
+else
+    log_append "[TWGCB-01-012-0305][PASS] /etc/shells does not contain nologin"
+    set_flag flag_305 1
+fi
+
+# ======================================
+# TWGCB-01-012-0306
+# chrony需禁止以root權限執行 (OPTIONS="-F 2")
+if grep -qE "^[[:space:]]*OPTIONS=.*-F[[:space:]]+2" /etc/sysconfig/chronyd 2>/dev/null; then
+    log_append "[TWGCB-01-012-0306][PASS] chronyd OPTIONS includes -F 2 (seccomp filter)"
+    set_flag flag_306 1
+else
+    log_append "[TWGCB-01-012-0306][FAIL] chronyd OPTIONS does not include -F 2 in /etc/sysconfig/chronyd"
+    set_flag flag_306 0
+fi
+
+# ======================================
+# TWGCB-01-012-0307
+# ptrace限制模式需設定為kernel.yama.ptrace_scope=1
+ptrace_runtime=$(sysctl -n kernel.yama.ptrace_scope 2>/dev/null)
+ptrace_config=$(grep -rh "^kernel.yama.ptrace_scope[[:space:]]*=" /etc/sysctl.conf /etc/sysctl.d/ 2>/dev/null | tail -1 | awk -F'=' '{print $2}' | tr -d ' ')
+if [ "$ptrace_runtime" = "1" ] && [ "$ptrace_config" = "1" ]; then
+    log_append "[TWGCB-01-012-0307][PASS] kernel.yama.ptrace_scope=1 (runtime and config)"
+    set_flag flag_307 1
+else
+    log_append "[TWGCB-01-012-0307][FAIL] ptrace_scope: runtime=$ptrace_runtime config=$ptrace_config (both should be 1)"
+    set_flag flag_307 0
+fi
+
+# ======================================
+# TWGCB-01-012-0308
+# rsyslog logrotate需設定為啟用
+if [ -f /etc/logrotate.d/syslog ] || [ -f /etc/logrotate.d/rsyslog ]; then
+    log_append "[TWGCB-01-012-0308][PASS] rsyslog logrotate configuration exists"
+    set_flag flag_308 1
+else
+    log_append "[TWGCB-01-012-0308][FAIL] rsyslog logrotate configuration not found in /etc/logrotate.d/"
+    set_flag flag_308 0
+fi
+
+# ======================================
+# TWGCB-01-012-0309
+# root之預設umask需設定為027或更低
+root_umask_fail=0
+for rcfile in /root/.bash_profile /root/.bashrc; do
+    if [ -f "$rcfile" ]; then
+        if ! grep -qE "^[[:space:]]*umask[[:space:]]+(027|007|077|0[0-7][267])" "$rcfile" 2>/dev/null; then
+            log_append "[TWGCB-01-012-0309][FAIL] umask 027 or lower not set in $rcfile"
+            root_umask_fail=1
+        fi
+    fi
+done
+if [ $root_umask_fail -eq 0 ]; then
+    log_append "[TWGCB-01-012-0309][PASS] root umask is set to 027 or lower in bash profile files"
+    set_flag flag_309 1
+else
+    set_flag flag_309 0
+fi
+
+# ======================================
+# TWGCB-01-012-0310
+# root帳號鎖定時間需設定60秒以上 (even_deny_root + root_unlock_time=60)
+faillock_conf="/etc/security/faillock.conf"
+if grep -qE "^[[:space:]]*even_deny_root" "$faillock_conf" 2>/dev/null; then
+    root_unlock=$(grep -E "^[[:space:]]*root_unlock_time[[:space:]]*=" "$faillock_conf" 2>/dev/null | awk -F'=' '{print $2}' | tr -d ' ')
+    if [ -n "$root_unlock" ] && [ "$root_unlock" -ge 60 ]; then
+        log_append "[TWGCB-01-012-0310][PASS] faillock even_deny_root enabled, root_unlock_time=$root_unlock (>= 60)"
+        set_flag flag_310 1
+    else
+        log_append "[TWGCB-01-012-0310][FAIL] faillock even_deny_root enabled but root_unlock_time=$root_unlock (should be >= 60)"
+        set_flag flag_310 0
+    fi
+else
+    log_append "[TWGCB-01-012-0310][FAIL] faillock even_deny_root not configured in $faillock_conf"
+    set_flag flag_310 0
+fi
+
+# ======================================
+# TWGCB-01-012-0311
+# 連續字元序列可使用個數需設定為3以下且大於0 (maxsequence)
+maxseq=$(grep -E "^[[:space:]]*maxsequence[[:space:]]*=" /etc/security/pwquality.conf 2>/dev/null | awk -F'=' '{print $2}' | tr -d ' ')
+if [ -n "$maxseq" ] && [ "$maxseq" -gt 0 ] && [ "$maxseq" -le 3 ]; then
+    log_append "[TWGCB-01-012-0311][PASS] pwquality maxsequence=$maxseq (1-3)"
+    set_flag flag_311 1
+else
+    log_append "[TWGCB-01-012-0311][FAIL] pwquality maxsequence=$maxseq (should be 1-3)"
+    set_flag flag_311 0
+fi
+
+# ======================================
+# TWGCB-01-012-0312
+# 需啟用without-nullok (禁止空密碼登入)
+nullok_found=0
+for pam_file in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
+    if grep -qE "^[[:space:]]*password.*pam_unix.*nullok" "$pam_file" 2>/dev/null || \
+       grep -qE "^[[:space:]]*auth.*pam_unix.*nullok" "$pam_file" 2>/dev/null; then
+        log_append "[TWGCB-01-012-0312][FAIL] nullok found in $pam_file (should use without-nullok or remove nullok)"
+        nullok_found=1
+    fi
+done
+if [ $nullok_found -eq 0 ]; then
+    log_append "[TWGCB-01-012-0312][PASS] nullok not found in PAM configuration (without-nullok effective)"
+    set_flag flag_312 1
+else
+    set_flag flag_312 0
+fi
+
+# ======================================
+# TWGCB-01-012-0313
+# 需啟用pam_pwquality模組
+pam_pwq_found=0
+for pam_file in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
+    if grep -qE "^[[:space:]]*password.*pam_pwquality" "$pam_file" 2>/dev/null; then
+        pam_pwq_found=1
+    fi
+done
+if [ $pam_pwq_found -eq 1 ]; then
+    log_append "[TWGCB-01-012-0313][PASS] pam_pwquality module is configured in PAM"
+    set_flag flag_313 1
+else
+    log_append "[TWGCB-01-012-0313][FAIL] pam_pwquality module not found in /etc/pam.d/system-auth or password-auth"
+    set_flag flag_313 0
+fi
+
+# ======================================
+# TWGCB-01-012-0314
+# 需啟用pam_unix模組
+pam_unix_found=0
+for pam_file in /etc/pam.d/system-auth /etc/pam.d/password-auth; do
+    if grep -qE "^[[:space:]]*(password|auth).*pam_unix" "$pam_file" 2>/dev/null; then
+        pam_unix_found=1
+    fi
+done
+if [ $pam_unix_found -eq 1 ]; then
+    log_append "[TWGCB-01-012-0314][PASS] pam_unix module is configured in PAM"
+    set_flag flag_314 1
+else
+    log_append "[TWGCB-01-012-0314][FAIL] pam_unix module not found in /etc/pam.d/system-auth or password-auth"
+    set_flag flag_314 0
 fi
 
 echo
