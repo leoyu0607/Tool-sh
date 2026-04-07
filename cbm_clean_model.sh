@@ -1,7 +1,7 @@
 #!/bin/bash
 
-BASE_DIR="/home/admin_ai3/cbm/apache-tomcat/extension/cbm/attachment/SmartQA"
-LOG=/home/admin_ai3/cbm/clean_model.log
+BASE_DIR="/home/ai3/cbm/apache-tomcat/extension/cbm/attachment/SmartQA"
+LOG=/home/ai3/cbm/clean_model.log
 
 # 對每個 SmartQA 子目錄進行處理
 for case_dir in "$BASE_DIR"/*/; do

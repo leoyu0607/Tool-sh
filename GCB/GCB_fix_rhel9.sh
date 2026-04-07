@@ -3010,16 +3010,18 @@ fi
 # ======================================
 # TWGCB-01-012-0188
 # 設定 SELinux 為 enforcing 模式
+selinx_level="permissive"
+selinux_flag="0"
 if [ $flag_188 -eq 0 ]; then
     selinux_conf="/etc/selinux/config"
     if grep -qsE '^\s*SELINUX\s*=' "$selinux_conf" 2>/dev/null; then
-        sed -i 's/^\s*SELINUX\s*=.*/SELINUX=enforcing/' "$selinux_conf"
+        sed -i "s/^\s*SELINUX\s*=.*/SELINUX=$selinx_level/" "$selinux_conf"
     else
         echo "SELINUX=enforcing" >> "$selinux_conf"
     fi
-    setenforce 1 2>/dev/null
+    setenforce $selinux_flag 2>/dev/null
     set_flag flag_188 1
-    log_append "[TWGCB-01-012-0188][FIX] set SELINUX=enforcing and applied setenforce 1"
+    log_append "[TWGCB-01-012-0188][FIX] set SELINUX=$selinx_level and applied setenforce $selinux_flag"
 fi
 # ======================================
 # TWGCB-01-012-0190
