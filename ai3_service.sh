@@ -9,11 +9,15 @@ service=()
 count=1
 
 #change user via command line argument
-while getopts "u:" opt; do
+while getopts "u:s:" opt; do
     case $opt in
         u)
             User="$OPTARG"
             ServiceDir="/home/$User/"
+            ;;
+        s)
+            cmd_service="$OPTARG"
+            qs_status $cmd_service
             ;;
         *)
             echo "Invalid option: -$OPTARG" >&2
@@ -38,7 +42,7 @@ fi
 if [ -d "$ServiceDir" ]; then
     for d in "$ServiceDir"/* ; do
         ServiceName=$(basename "$d")
-        if [[ "$ServiceName" =~ (ecp|gateway|cbe|cbm|[Mm]edia[Pp]roxy) ]]; then
+        if [[ "$ServiceName" =~ (ecp|gateway|[Gg][Ww]|cbe|cbm|[Mm]edia[Pp]roxy|[Mm][Pp]) ]]; then
             service+=("$ServiceName")
         fi
     done
@@ -64,6 +68,18 @@ else
     echo "Server Type=$AppServerType"
 fi
 
+#Call Mail API告警
+mail() {
+    local SUBJECT="Alert"
+    local BODY="Service $1 is down at $(date)"
+    curl --url "smtps://your.mailserver.com:465" \
+     --ssl-reqd \
+     --user "user@example.com:password" \
+     --mail-from "sender@example.com" \
+     --mail-rcpt "admin@example.com" \
+     -T <(echo -e "Subject: $SUBJECT\n\n$BODY")
+}
+
 #qs_status function to check service status
 qs_status() {
     local service_name=$1
@@ -74,6 +90,8 @@ qs_status() {
         echo "$service_name service is running (PIDs: $pids)"
     else
         echo "$service_name service is not running"
+        #if service down then send mail to alert
+        #mail $service_name
     fi
 }
 #qs_start function to start service
