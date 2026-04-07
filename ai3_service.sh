@@ -7,6 +7,7 @@ ServiceDir="/home/$User/"
 AppServerType=""
 service=()
 count=1
+alert_flag=false
 
 #change user via command line argument
 while getopts "u:s:" opt; do
@@ -91,7 +92,9 @@ qs_status() {
     else
         echo "$service_name service is not running"
         #if service down then send mail to alert
-        #mail $service_name
+        if $alert_flag; then
+            mail $service_name
+        fi
     fi
 }
 #qs_start function to start service
