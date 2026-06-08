@@ -30,3 +30,4 @@ echo
 export PATH=jre/bin:$PATH
 export JAVA_HOME=jre
 ./apache-tomcat/bin/version.sh 2>/dev/null | grep "Server number"
+echo "Machine IP: $(hostname -I | awk '{print $1}')"

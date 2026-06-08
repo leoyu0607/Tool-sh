@@ -2985,27 +2985,31 @@ fi
 # TWGCB-01-012-0186
 # 移除 GRUB 中的 SELinux 禁用參數
 if [ $flag_186 -eq 0 ]; then
-    grub_file="/etc/default/grub"
-    if grep -qP '(selinux=0|enforcing=0)' "$grub_file" 2>/dev/null; then
-        sed -i 's/ selinux=0//g; s/ enforcing=0//g' "$grub_file"
-        grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || \
-            grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg 2>/dev/null
-        log_append "[TWGCB-01-012-0186][FIX] removed selinux=0/enforcing=0 from GRUB (reboot required)"
-    fi
-    set_flag flag_186 1
+#    grub_file="/etc/default/grub"
+#    if grep -qP '(selinux=0|enforcing=0)' "$grub_file" 2>/dev/null; then
+#        sed -i 's/ selinux=0//g; s/ enforcing=0//g' "$grub_file"
+#        grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || \
+#            grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg 2>/dev/null
+#        log_append "[TWGCB-01-012-0186][FIX] removed selinux=0/enforcing=0 from GRUB (reboot required)"
+#    fi
+#    set_flag flag_186 1
+    set_flag flag_186 2
+    log_append "[TWGCB-01-012-0186][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
 # ======================================
 # TWGCB-01-012-0187
 # 設定 SELinux 框架為 targeted
 if [ $flag_187 -eq 0 ]; then
-    selinux_conf="/etc/selinux/config"
-    if grep -qsE '^\s*SELINUXTYPE\s*=' "$selinux_conf" 2>/dev/null; then
-        sed -i 's/^\s*SELINUXTYPE\s*=.*/SELINUXTYPE=targeted/' "$selinux_conf"
-    else
-        echo "SELINUXTYPE=targeted" >> "$selinux_conf"
-    fi
-    set_flag flag_187 1
-    log_append "[TWGCB-01-012-0187][FIX] set SELINUXTYPE=targeted in $selinux_conf"
+#    selinux_conf="/etc/selinux/config"
+#    if grep -qsE '^\s*SELINUXTYPE\s*=' "$selinux_conf" 2>/dev/null; then
+#        sed -i 's/^\s*SELINUXTYPE\s*=.*/SELINUXTYPE=targeted/' "$selinux_conf"
+#    else
+#        echo "SELINUXTYPE=targeted" >> "$selinux_conf"
+#    fi
+#    set_flag flag_187 1
+#    log_append "[TWGCB-01-012-0187][FIX] set SELINUXTYPE=targeted in $selinux_conf"
+    set_flag flag_187 2
+    log_append "[TWGCB-01-012-0187][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
 # ======================================
 # TWGCB-01-012-0188
@@ -3027,27 +3031,30 @@ fi
 # TWGCB-01-012-0190
 # 移除 setroubleshoot 套件
 if [ $flag_190 -eq 0 ]; then
-    if dnf remove -y setroubleshoot 2>/dev/null; then
-        set_flag flag_190 1
-        log_append "[TWGCB-01-012-0190][FIX] removed setroubleshoot"
-    else
-        set_flag flag_190 0
-        log_append "[TWGCB-01-012-0190][ERROR] failed to remove setroubleshoot"
-    fi
+#    if dnf remove -y setroubleshoot 2>/dev/null; then
+#        set_flag flag_190 1
+#        log_append "[TWGCB-01-012-0190][FIX] removed setroubleshoot"
+#    else
+#        set_flag flag_190 0
+#        log_append "[TWGCB-01-012-0190][ERROR] failed to remove setroubleshoot"
+#    fi
+    set_flag flag_190 2
+    log_append "[TWGCB-01-012-0190][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
 # ======================================
 # TWGCB-01-012-0191
 # 移除 mcstrans 套件
 if [ $flag_191 -eq 0 ]; then
-    if dnf remove -y mcstrans 2>/dev/null; then
-        set_flag flag_191 1
-        log_append "[TWGCB-01-012-0191][FIX] removed mcstrans"
-    else
-        set_flag flag_191 0
-        log_append "[TWGCB-01-012-0191][ERROR] failed to remove mcstrans"
-    fi
+#    if dnf remove -y mcstrans 2>/dev/null; then
+#        set_flag flag_191 1
+#        log_append "[TWGCB-01-012-0191][FIX] removed mcstrans"
+#    else
+#        set_flag flag_191 0
+#        log_append "[TWGCB-01-012-0191][ERROR] failed to remove mcstrans"
+#    fi
+    set_flag flag_191 2
+    log_append "[TWGCB-01-012-0191][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
-
 # ======================================
 # TWGCB-01-012-0192
 # crond服務須設定為啟用

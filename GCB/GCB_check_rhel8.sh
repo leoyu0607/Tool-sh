@@ -3541,7 +3541,7 @@ fi
 # TWGCB-01-008-0231
 # sudoers 中不含 NOPASSWD 或 !authenticate
 sudo231_fail=0
-if grep -rsiE '(NOPASSWD|!authenticate)' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | grep -vE '^\s*#' | grep -q .; then
+if grep -rsiEh '(NOPASSWD|!authenticate)' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | grep -vE '^\s*#' | grep -q .; then
     log_append "[TWGCB-01-008-0231][FAIL] NOPASSWD or !authenticate found in sudoers (manual remediation required)"
     sudo231_fail=1
 else
@@ -4371,8 +4371,9 @@ else
     set_flag flag_292 1
 fi
 
-echo
-grep -E 'FAIL|CRITICAL' "$log"
+log_append " "
+result="$(grep -E '\[FAIL\]|\[CRITICAL\]' "$log")"
+log_append "$result"
 # ======================================
 # 結果統計
 log_append "========================================"

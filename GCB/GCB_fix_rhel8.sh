@@ -87,9 +87,10 @@ fi
 # TWGCB-01-008-0004
 # 設定/tmp目錄需為tmpfs
 if [ $flag_004 -eq 0 ]; then
-    systemctl enable --now tmp.mount
-    set_flag flag_004 1
-    log_append "[TWGCB-01-008-0004][FIX] set /tmp mounted as tmpfs"
+    #systemctl enable --now tmp.mount
+    set_flag flag_004 2
+    #log_append "[TWGCB-01-008-0004][FIX] set /tmp mounted as tmpfs"
+    log_append "[TWGCB-01-008-0004][IGNORE] 設定後影響服務使用"
 fi
 # ======================================
 # TWGCB-01-008-0005
@@ -118,7 +119,7 @@ if [ $flag_007 -eq 0 ]; then
     #sed -i "s/Options.*/Options=mode=1777,strictatime,nosuid,nodev,noexec/" /usr/lib/systemd/system/tmp.mount
     #sudo systemctl daemon-reload
     #sudo systemctl restart tmp.mount
-    # set_flag flag_007 1
+    set_flag flag_007 2
     #log_append "[TWGCB-01-008-0007][FIX] set /tmp option as noexec"
     log_append "[TWGCB-01-008-0007][IGNORE] 設定後影響服務使用"
 fi
@@ -359,15 +360,15 @@ if [ $flag_023 -eq 0 ] || [ $flag_024 -eq 0 ] || [ $flag_025 -eq 0 ]; then
             log_append "[TWGCB-01-008-0023][FIX] add nodev option to /home in /etc/fstab"
             set_flag flag_024 1
             log_append "[TWGCB-01-008-0024][FIX] add nosuid option to /home in /etc/fstab"
-            set_flag flag_025 1
-            log_append "[TWGCB-01-008-0025][IGNORE] 設定後影響服務使用"
+            set_flag flag_025 2
+            log_append "[TWGCB-01-008-0025][IGNORE] 服務存放在/home目錄下，無法設定noexec，設定後服務無法執行"
         else
             set_flag flag_023 0
             log_append "[TWGCB-01-008-0023][ERROR] failed to update /etc/fstab for nodev option on /home"
             set_flag flag_024 0
             log_append "[TWGCB-01-008-0024][ERROR] failed to update /etc/fstab for nosuid option on /home"
-            set_flag flag_025 0
-            log_append "[TWGCB-01-008-0025][IGNORE] 設定後影響服務使用"
+            set_flag flag_025 2
+            log_append "[TWGCB-01-008-0025][IGNORE] 服務存放在/home目錄下，無法設定noexec，設定後服務無法執行"
         fi
         # 重新掛載
         mount -o remount,nodev,nosuid,noexec "$mp" 2>/dev/null || true
@@ -472,59 +473,60 @@ fi
 # 啟用GPG簽章驗證功能
 if [ $flag_032 -eq 0 ]; then
     #修復全域設定
-    if [ -f /etc/dnf/dnf.conf ]; then
-        cp -a /etc/dnf/dnf.conf "/etc/dnf/dnf.conf.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
-        sed -i -E '/^\s*gpgcheck\s*=/d' /etc/dnf/dnf.conf
-        sed -i -E '/^\s*localpkg_gpgcheck\s*=/d' /etc/dnf/dnf.conf
-        echo "gpgcheck=1" >> /etc/dnf/dnf.conf
-        echo "localpkg_gpgcheck=1" >> /etc/dnf/dnf.conf
-    else
-        log_append "[TWGCB-01-008-0032][ERROR] /etc/dnf/dnf.conf not found, cannot set global gpgcheck"
-    fi
-    #修復repo設定
-    shopt -s nullglob
-    repo_files=(/etc/yum.repos.d/*.repo)
-    shopt -u nullglob
-    if [ ${#repo_files[@]} -eq 0 ]; then
-        set_flag flag_032 0
-        log_append "[TWGCB-01-008-0032][ERROR] No .repo files found in /etc/yum.repos.d/, cannot set repo gpgcheck"
-    else
-        for repo in "${repo_files[@]}"; do
-            cp -a "$repo" "$repo.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
-            sed -i -E 's/^\s*gpgcheck\s*=.*/gpgcheck=1/' "$repo"
-            sed -i -E 's/^\s*localpkg_gpgcheck\s*=.*/localpkg_gpgcheck=1/' "$repo"
-            # 若確保每個 [repoid] 區塊都有這些參數
-            awk '
-            function ensure_defaults() {
-                if (!seen["gpgcheck"])          print "gpgcheck=1"
-                if (!seen["localpkg_gpgcheck"]) print "localpkg_gpgcheck=1"
-            }
+    #if [ -f /etc/dnf/dnf.conf ]; then
+    #    cp -a /etc/dnf/dnf.conf "/etc/dnf/dnf.conf.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
+    #    sed -i -E '/^\s*gpgcheck\s*=/d' /etc/dnf/dnf.conf
+    #    sed -i -E '/^\s*localpkg_gpgcheck\s*=/d' /etc/dnf/dnf.conf
+    #    echo "gpgcheck=1" >> /etc/dnf/dnf.conf
+    #    echo "localpkg_gpgcheck=1" >> /etc/dnf/dnf.conf
+    #else
+    #    log_append "[TWGCB-01-008-0032][ERROR] /etc/dnf/dnf.conf not found, cannot set global gpgcheck"
+    #fi
+    ##修復repo設定
+    #shopt -s nullglob
+    #repo_files=(/etc/yum.repos.d/*.repo)
+    #shopt -u nullglob
+    #if [ ${#repo_files[@]} -eq 0 ]; then
+    #    set_flag flag_032 0
+    #    log_append "[TWGCB-01-008-0032][ERROR] No .repo files found in /etc/yum.repos.d/, cannot set repo gpgcheck"
+    #else
+    #    for repo in "${repo_files[@]}"; do
+    #        cp -a "$repo" "$repo.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
+    #        sed -i -E 's/^\s*gpgcheck\s*=.*/gpgcheck=1/' "$repo"
+    #        sed -i -E 's/^\s*localpkg_gpgcheck\s*=.*/localpkg_gpgcheck=1/' "$repo"
+    #        # 若確保每個 [repoid] 區塊都有這些參數
+    #        awk '
+    #        function ensure_defaults() {
+    #            if (!seen["gpgcheck"])          print "gpgcheck=1"
+    #            if (!seen["localpkg_gpgcheck"]) print "localpkg_gpgcheck=1"
+    #        }
 
             # 遇到新區塊 [repoid]
-            /^[[:space:]]*\[/ {
-                # 先補齊上一個區塊缺的參數
-                if (in_section) ensure_defaults()
-
-                # reset 區塊狀態
-                delete seen
-                in_section = 1
-            }
+    #        /^[[:space:]]*\[/ {
+    #            # 先補齊上一個區塊缺的參數
+    #            if (in_section) ensure_defaults()
+#
+    #            # reset 區塊狀態
+    #            delete seen
+    #            in_section = 1
+     #       }
 
             # 記錄本區塊是否看過這些 key
-            /^[[:space:]]*gpgcheck[[:space:]]*=/          { seen["gpgcheck"] = 1 }
-            /^[[:space:]]*localpkg_gpgcheck[[:space:]]*=/ { seen["localpkg_gpgcheck"] = 1 }
+    #        /^[[:space:]]*gpgcheck[[:space:]]*=/          { seen["gpgcheck"] = 1 }
+    #        /^[[:space:]]*localpkg_gpgcheck[[:space:]]*=/ { seen["localpkg_gpgcheck"] = 1 }
 
             # 原樣輸出每一行
-            { print }
+    #        { print }
 
-            END {
-                if (in_section) ensure_defaults()
-            }
-            ' "$repo" > "${repo}.tmp" && mv -f "${repo}.tmp" "$repo"
-        done
-    fi
-    set_flag flag_032 1
-    log_append "[TWGCB-01-008-0032][FIX] enable GPG signature verification"
+    #        END {
+    #            if (in_section) ensure_defaults()
+    #        }
+    #        ' "$repo" > "${repo}.tmp" && mv -f "${repo}.tmp" "$repo"
+    #    done
+    #fi
+    set_flag flag_032 2
+    #log_append "[TWGCB-01-008-0032][FIX] enable GPG signature verification"
+    log_append "[TWGCB-01-008-0032][IGNORE] 客服系統例外項目"
 fi
 # ======================================
 # TWGCB-01-008-0033
@@ -562,13 +564,15 @@ fi
 # TWGCB-01-008-0036
 # 安裝AIDE(Advanced Intrusion Detection Environment，先進入侵偵測環境)套件
 if [ $flag_036 -eq 0 ]; then
-    if dnf install -y aide --setopt=timeout=10 --setopt=retries=1 > /tmp/dnf_install.log 2>&1; then
-        set_flag flag_036 1
-        log_append "[TWGCB-01-008-0036][FIX] install AIDE package"
-    else
-        set_flag flag_036 0
-        log_append "[TWGCB-01-008-0036][ERROR] failed to install AIDE package"
-    fi
+    #if dnf install -y aide --setopt=timeout=10 --setopt=retries=1 > /tmp/dnf_install.log 2>&1; then
+    #    set_flag flag_036 1
+    #    log_append "[TWGCB-01-008-0036][FIX] install AIDE package"
+    #else
+    #    set_flag flag_036 0
+    #    log_append "[TWGCB-01-008-0036][ERROR] failed to install AIDE package"
+    #fi
+    set_flag flag_036 2
+    log_append "[TWGCB-01-008-0036][IGNORE] 不建議安裝，音系統會有大量資料，在aide掃描時會造成大量I/O，會影響到系統服務"
 fi
 # ======================================
 # TWGCB-01-008-0037
@@ -582,6 +586,9 @@ elif [ $flag_036 -eq 1 ] && [ $flag_037 -eq 0 ]; then
     (echo "$current"; echo "0 5 * * * /usr/sbin/aide --check > /var/log/aide-check.log 2>&1") | crontab -
     set_flag flag_037 1
     log_append "[TWGCB-01-008-0037][FIX] schedule regular file integrity checks with AIDE"
+elif [ $flag_036 -eq 2 ]; then
+    set_flag flag_037 2
+    log_append "[TWGCB-01-008-0037][IGNORE] 不建議安裝，音系統會有大量資料，在aide掃描時會造成大量I/O，會影響到系統服務"
 fi
 # ======================================
 # TWGCB-01-008-0038
@@ -655,7 +662,7 @@ fi
 # 停用核心傾印(Core dump)功能
 if [ $flag_042 -eq 0 ]; then
     set_flag flag_042 2
-    log_append "[TWGCB-01-008-0042][IGNORE] 影響Sipx服務使用，請評估後手動設定"
+    log_append "[TWGCB-01-008-0042][IGNORE] 無法設定會直接影響服務無法正常運作(目前測試SIPX會出現failed to ensure corefile creation，並且SIP無法正常傳輸)"
 fi
 # ======================================
 # TWGCB-01-008-0043
@@ -670,18 +677,20 @@ fi
 # TWGCB-01-008-0044
 # 設定全系統加密原則為FUTURE或FIPS
 if [ $flag_044 -eq 0 ];then
-    if [ -f /etc/crypto-policies/config ]; then
-        cp -a /etc/crypto-policies/config "/etc/crypto-policies/config.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
-        echo "FUTURE" > /etc/crypto-policies/config
-        update-crypto-policies --set FUTURE
-        update-crypto-policies
-        fips-mode-setup --enable
-        set_flag flag_044 1
-        log_append "[TWGCB-01-008-0044][FIX] set system-wide crypto policy to FUTURE"
-    else
-        set_flag flag_044 0
-        log_append "[TWGCB-01-008-0044][ERROR] /etc/crypto-policies/config not found, cannot set crypto policy"
-    fi
+    #if [ -f /etc/crypto-policies/config ]; then
+    #    cp -a /etc/crypto-policies/config "/etc/crypto-policies/config.bak.$(date +%F_%H%M%S)" 2>/dev/null || true
+    #    echo "FUTURE" > /etc/crypto-policies/config
+    #    update-crypto-policies --set FUTURE
+    #    update-crypto-policies
+    #    fips-mode-setup --enable
+    #    set_flag flag_044 1
+    #    log_append "[TWGCB-01-008-0044][FIX] set system-wide crypto policy to FUTURE"
+    #else
+    #    set_flag flag_044 0
+    #    log_append "[TWGCB-01-008-0044][ERROR] /etc/crypto-policies/config not found, cannot set crypto policy"
+    #fi
+    set_flag flag_044 2
+    log_append "[TWGCB-01-008-0044][IGNORE] 客服系統例外項目"
 fi
 # ======================================
 # TWGCB-01-008-0045
@@ -815,17 +824,27 @@ fi
 # TWGCB-01-008-0061
 # 其他使用者禁止寫入具有全域寫入(World-writable)權限的檔案
 if [ $flag_061 -eq 0 ]; then
-    # 找出所有具有全域寫入權限的檔案
-    files=$(find $(findmnt -rn -o TARGET -t ext4,xfs) -xdev -type f -perm -0002 2>/dev/null)
+    flag_061_success=1
+
+    # 取得掛載點，排除 Docker/container 相關路徑
+    mountpoints=$(findmnt -rn -o TARGET -t ext4,xfs | grep -vE '^/var/lib/docker|^/var/lib/containers|^/run/containers')
+
+    files=$(find $mountpoints -xdev -type f -perm -0002 2>/dev/null)
+
     for file in $files; do
+        # 再次排除（防止 symlink 或 bind mount 繞過）
+        if echo "$file" | grep -qE '^/var/lib/docker|^/var/lib/containers'; then
+            continue
+        fi
         if chmod o-w "$file"; then
             log_append "[TWGCB-01-008-0061][FIX] removed world-writable permission from file: $file"
-            set_flag flag_061 1
         else
             log_append "[TWGCB-01-008-0061][ERROR] failed to remove world-writable permission from file: $file"
-            set_flag flag_061 0
+            flag_061_success=0
         fi
     done
+
+    set_flag flag_061 $flag_061_success
 fi
 # ======================================
 # TWGCB-01-008-0062
@@ -1696,13 +1715,15 @@ fi
 # TWGCB-01-008-0099
 # FTP伺服器服務須停用
 if [ $flag_099 -eq 0 ]; then
-    if systemctl --now mask vsftpd; then
-        set_flag flag_099 1
-        log_append "[TWGCB-01-008-0099][FIX] masked vsftpd (FTP server) service"
-    else
-        set_flag flag_099 0
-        log_append "[TWGCB-01-008-0099][ERROR] failed to mask vsftpd service"
-    fi
+    #if systemctl --now mask vsftpd; then
+    #    set_flag flag_099 1
+    #    log_append "[TWGCB-01-008-0099][FIX] masked vsftpd (FTP server) service"
+    #else
+    #    set_flag flag_099 0
+    #    log_append "[TWGCB-01-008-0099][ERROR] failed to mask vsftpd service"
+    #fi
+    set_flag flag_099 2
+    log_append "[TWGCB-01-008-0099][IGNORE] SIPX不可設定，目前使用vsftpd服務當FTP server"
 fi
 # ======================================
 # TWGCB-01-008-0100
@@ -2255,14 +2276,16 @@ fi
 # TWGCB-01-008-0136
 # 稽核處理失敗時通知系統管理者 (postmaster: root in /etc/aliases)
 if [ $flag_136 -eq 0 ]; then
-    if grep -qsE '^\s*postmaster\s*:' /etc/aliases 2>/dev/null; then
-        sed -i 's/^\s*postmaster\s*:.*/postmaster: root/' /etc/aliases
-    else
-        echo "postmaster: root" >> /etc/aliases
-    fi
-    newaliases 2>/dev/null || true
-    set_flag flag_136 1
-    log_append "[TWGCB-01-008-0136][FIX] set postmaster: root in /etc/aliases"
+    #if grep -qsE '^\s*postmaster\s*:' /etc/aliases 2>/dev/null; then
+    #    sed -i 's/^\s*postmaster\s*:.*/postmaster: root/' /etc/aliases
+    #else
+    #    echo "postmaster: root" >> /etc/aliases
+    #fi
+    #newaliases 2>/dev/null || true
+    #set_flag flag_136 1
+    #log_append "[TWGCB-01-008-0136][FIX] set postmaster: root in /etc/aliases"
+    set_flag flag_136 2
+    log_append "[TWGCB-01-008-0136][IGNORE] 須配合mail server，本系統無提供"
 fi
 # ======================================
 # TWGCB-01-008-0137 / 0138 / 0139 / 0140
@@ -2436,14 +2459,16 @@ fi
 # TWGCB-01-008-0147
 # auditd max_log_file_action 設定
 if [ $flag_147 -eq 0 ]; then
-    auditd_conf="/etc/audit/auditd.conf"
-    if grep -qiE '^\s*max_log_file_action\s*=' "$auditd_conf" 2>/dev/null; then
-        sed -i 's/^\s*max_log_file_action\s*=.*/max_log_file_action = keep_logs/' "$auditd_conf"
-    else
-        echo "max_log_file_action = keep_logs" >> "$auditd_conf"
-    fi
-    set_flag flag_147 1
-    log_append "[TWGCB-01-008-0147][FIX] set max_log_file_action = keep_logs in $auditd_conf"
+    #auditd_conf="/etc/audit/auditd.conf"
+    #if grep -qiE '^\s*max_log_file_action\s*=' "$auditd_conf" 2>/dev/null; then
+    #    sed -i 's/^\s*max_log_file_action\s*=.*/max_log_file_action = keep_logs/' "$auditd_conf"
+    #else
+    #    echo "max_log_file_action = keep_logs" >> "$auditd_conf"
+    #fi
+    #set_flag flag_147 1
+    #log_append "[TWGCB-01-008-0147][FIX] set max_log_file_action = keep_logs in $auditd_conf"
+    set_flag flag_147 2
+    log_append "[TWGCB-01-008-0147][IGNORE] 客服系統例外項目"
 fi
 # ======================================
 # TWGCB-01-008-0148
@@ -3083,65 +3108,83 @@ fi
 # TWGCB-01-008-0186
 # 移除 GRUB 中的 SELinux 禁用參數
 if [ $flag_186 -eq 0 ]; then
-    grub_file="/etc/default/grub"
-    if grep -qP '(selinux=0|enforcing=0)' "$grub_file" 2>/dev/null; then
-        sed -i 's/ selinux=0//g; s/ enforcing=0//g' "$grub_file"
-        grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || \
-            grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg 2>/dev/null
-        log_append "[TWGCB-01-008-0186][FIX] removed selinux=0/enforcing=0 from GRUB (reboot required)"
-    fi
-    set_flag flag_186 1
+    #grub_file="/etc/default/grub"
+    #if grep -qP '(selinux=0|enforcing=0)' "$grub_file" 2>/dev/null; then
+    #    sed -i 's/ selinux=0//g; s/ enforcing=0//g' "$grub_file"
+    #    grub2-mkconfig -o /boot/grub2/grub.cfg 2>/dev/null || \
+    #        grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg 2>/dev/null
+    #    log_append "[TWGCB-01-008-0186][FIX] removed selinux=0/enforcing=0 from GRUB (reboot required)"
+    #fi
+    #set_flag flag_186 1
+    set_flag flag_186 2
+    log_append "[TWGCB-01-008-0186][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
 # ======================================
 # TWGCB-01-008-0187
 # 設定 SELinux 框架為 targeted
 if [ $flag_187 -eq 0 ]; then
-    selinux_conf="/etc/selinux/config"
-    if grep -qsE '^\s*SELINUXTYPE\s*=' "$selinux_conf" 2>/dev/null; then
-        sed -i 's/^\s*SELINUXTYPE\s*=.*/SELINUXTYPE=targeted/' "$selinux_conf"
-    else
-        echo "SELINUXTYPE=targeted" >> "$selinux_conf"
-    fi
-    set_flag flag_187 1
-    log_append "[TWGCB-01-008-0187][FIX] set SELINUXTYPE=targeted in $selinux_conf"
+    #selinux_conf="/etc/selinux/config"
+    #if grep -qsE '^\s*SELINUXTYPE\s*=' "$selinux_conf" 2>/dev/null; then
+    #    sed -i 's/^\s*SELINUXTYPE\s*=.*/SELINUXTYPE=targeted/' "$selinux_conf"
+    #else
+    #    echo "SELINUXTYPE=targeted" >> "$selinux_conf"
+    #fi
+    #set_flag flag_187 1
+    #log_append "[TWGCB-01-008-0187][FIX] set SELINUXTYPE=targeted in $selinux_conf"
+    set_flag flag_187 2
+    log_append "[TWGCB-01-008-0187][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
 # ======================================
 # TWGCB-01-008-0188
 # 設定 SELinux 為 enforcing 模式
+selinx_level="permissive"
+selinux_flag="0"
 if [ $flag_188 -eq 0 ]; then
     selinux_conf="/etc/selinux/config"
     if grep -qsE '^\s*SELINUX\s*=' "$selinux_conf" 2>/dev/null; then
-        sed -i 's/^\s*SELINUX\s*=.*/SELINUX=enforcing/' "$selinux_conf"
+        sed -i "s/^\s*SELINUX\s*=.*/SELINUX=$selinx_level/" "$selinux_conf"
     else
         echo "SELINUX=enforcing" >> "$selinux_conf"
     fi
-    setenforce 1 2>/dev/null
-    set_flag flag_188 1
-    log_append "[TWGCB-01-008-0188][FIX] set SELINUX=enforcing and applied setenforce 1"
+    setenforce $selinux_flag 2>/dev/null
+    set_flag flag_188 2
+    log_append "[TWGCB-01-008-0188][IGNORE] set SELINUX=$selinx_level and applied setenforce $selinux_flag"
+fi
+# ======================================
+# TWGCB-01-008-0189
+# 未設定的服務程序（需人工確認）
+selinx_level="permissive"
+selinux_flag="0"
+if [ $flag_189 -eq 0 ]; then
+    log_append "[TWGCB-01-008-0188][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
 # ======================================
 # TWGCB-01-008-0190
 # 移除 setroubleshoot 套件
 if [ $flag_190 -eq 0 ]; then
-    if dnf remove -y setroubleshoot 2>/dev/null; then
-        set_flag flag_190 1
-        log_append "[TWGCB-01-008-0190][FIX] removed setroubleshoot"
-    else
-        set_flag flag_190 0
-        log_append "[TWGCB-01-008-0190][ERROR] failed to remove setroubleshoot"
-    fi
+    #if dnf remove -y setroubleshoot 2>/dev/null; then
+    #    set_flag flag_190 1
+    #    log_append "[TWGCB-01-008-0190][FIX] removed setroubleshoot"
+    #else
+    #    set_flag flag_190 0
+    #    log_append "[TWGCB-01-008-0190][ERROR] failed to remove setroubleshoot"
+    #fi
+    set_flag flag_190 2
+    log_append "[TWGCB-01-008-0190][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
 # ======================================
 # TWGCB-01-008-0191
 # 移除 mcstrans 套件
 if [ $flag_191 -eq 0 ]; then
-    if dnf remove -y mcstrans 2>/dev/null; then
-        set_flag flag_191 1
-        log_append "[TWGCB-01-008-0191][FIX] removed mcstrans"
-    else
-        set_flag flag_191 0
-        log_append "[TWGCB-01-008-0191][ERROR] failed to remove mcstrans"
-    fi
+    #if dnf remove -y mcstrans 2>/dev/null; then
+    #    set_flag flag_191 1
+    #    log_append "[TWGCB-01-008-0191][FIX] removed mcstrans"
+    #else
+    #    set_flag flag_191 0
+    #    log_append "[TWGCB-01-008-0191][ERROR] failed to remove mcstrans"
+    #fi
+    set_flag flag_191 2
+    log_append "[TWGCB-01-008-0191][IGNORE] SELinux不可開啟，開啟會造成服務異常"
 fi
 # ======================================
 # TWGCB-01-008-0192
@@ -3339,7 +3382,7 @@ if [ $flag_208 -eq 0 ]; then
     if grep -qiE '^\s*[Rr]etry\s*=' "$pwq_conf" 2>/dev/null; then
         sed -i 's/^\s*[Rr]etry\s*=.*/Retry = 3/' "$pwq_conf"
     else
-        echo "Retry = 3" >> "$pwq_conf"
+        echo "retry = 3" >> "$pwq_conf"
     fi
     set_flag flag_208 1
     log_append "[TWGCB-01-008-0208][FIX] set Retry=3 in $pwq_conf"
@@ -3356,14 +3399,14 @@ fi
 if [ $flag_210 -eq 0 ]; then
     pwq_conf="/etc/security/pwquality.conf"
     if grep -qiE '^\s*minlen\s*=' "$pwq_conf" 2>/dev/null; then
-        sed -i 's/^\s*minlen\s*=.*/minlen = 12/' "$pwq_conf"
+        sed -i -E 's/^\s*minlen\s*=.*/minlen = 12/' "$pwq_conf"
     else
         echo "minlen = 12" >> "$pwq_conf"
     fi
     if grep -qE '^\s*PASS_MIN_LEN\s+' /etc/login.defs 2>/dev/null; then
-        sed -i 's/^\s*PASS_MIN_LEN\s+.*/PASS_MIN_LEN\t12/' /etc/login.defs
+        sed -i -E 's/^\s*PASS_MIN_LEN\s+.*/PASS_MIN_LEN\t12/' /etc/login.defs
     else
-        echo "PASS_MIN_LEN	12" >> /etc/login.defs
+        echo -e "PASS_MIN_LEN	12" >> /etc/login.defs
     fi
     set_flag flag_210 1
     log_append "[TWGCB-01-008-0210][FIX] set minlen=12 in pwquality.conf and PASS_MIN_LEN=12 in login.defs"
@@ -3642,6 +3685,7 @@ fi
 # TWGCB-01-008-0231
 # sudoers 中不含 NOPASSWD 或 !authenticate（需手動處理）
 if [ $flag_231 -eq 0 ]; then
+    set_flag flag_231 2
     log_append "[TWGCB-01-008-0231][IGNORE] sudoers 中含 NOPASSWD 或 !authenticate，需手動評估後移除"
 fi
 # ======================================
@@ -3678,8 +3722,11 @@ EOF
         set_flag flag_234 1
         log_append "[TWGCB-01-008-0234][FIX] set GNOME screensaver lock-enabled=true"
     else
+        set_flag flag_234 2
         log_append "[TWGCB-01-008-0234][IGNORE] dconf not installed (GNOME not present)"
     fi
+    #set_flag flag_234 2
+    #log_append "[TWGCB-01-008-0234][IGNORE] 客服系統例外項目"
 fi
 # ======================================
 # TWGCB-01-008-0235
@@ -3695,8 +3742,11 @@ EOF
         set_flag flag_235 1
         log_append "[TWGCB-01-008-0235][FIX] set GNOME idle-delay=900"
     else
+        set_flag flag_235 2
         log_append "[TWGCB-01-008-0235][IGNORE] dconf not installed (GNOME not present)"
     fi
+#    set_flag flag_235 2
+#    log_append "[TWGCB-01-008-0235][IGNORE] 客服系統例外項目"
 fi
 # ======================================
 # TWGCB-01-008-0236
@@ -3714,24 +3764,28 @@ if [ $flag_236 -eq 0 ]; then
     else
         log_append "[TWGCB-01-008-0236][IGNORE] /etc/gdm/custom.conf not found (GDM not installed)"
     fi
+#    set_flag flag_236 2
+#    log_append "[TWGCB-01-008-0236][IGNORE] 客服系統例外項目"
 fi
 # ======================================
 # TWGCB-01-008-0237
 # 設定系統帳號使用 nologin 並鎖定
 if [ $flag_237 -eq 0 ]; then
-    uid_min=$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs 2>/dev/null)
-    uid_min="${uid_min:-1000}"
-    nologin_path=$(which nologin 2>/dev/null || echo "/sbin/nologin")
-    while IFS=: read -r user _ uid _ _ _ shell; do
-        [ "$user" = "root" ] || [ "$user" = "sync" ] || [ "$user" = "shutdown" ] || [ "$user" = "halt" ] && continue
-        [[ "$user" =~ ^\+ ]] && continue
-        [ "$uid" -ge "$uid_min" ] 2>/dev/null && continue
-        if [ "$shell" != "$nologin_path" ] && [ "$shell" != "/bin/false" ] && [ "$shell" != "/usr/sbin/nologin" ]; then
-            usermod -s "$nologin_path" "$user" 2>/dev/null
-            log_append "[TWGCB-01-008-0237][FIX] changed shell of $user to $nologin_path"
-        fi
-    done < /etc/passwd
-    set_flag flag_237 1
+#    uid_min=$(awk '/^\s*UID_MIN/{print $2}' /etc/login.defs 2>/dev/null)
+#    uid_min="${uid_min:-1000}"
+#    nologin_path=$(which nologin 2>/dev/null || echo "/sbin/nologin")
+#    while IFS=: read -r user _ uid _ _ _ shell; do
+#        [ "$user" = "root" ] || [ "$user" = "sync" ] || [ "$user" = "shutdown" ] || [ "$user" = "halt" ] && continue
+#        [[ "$user" =~ ^\+ ]] && continue
+#        [ "$uid" -ge "$uid_min" ] 2>/dev/null && continue
+#        if [ "$shell" != "$nologin_path" ] && [ "$shell" != "/bin/false" ] && [ "$shell" != "/usr/sbin/nologin" ]; then
+#            usermod -s "$nologin_path" "$user" 2>/dev/null
+#            log_append "[TWGCB-01-008-0237][FIX] changed shell of $user to $nologin_path"
+#        fi
+#    done < /etc/passwd
+#    set_flag flag_237 1
+    set_flag flag_237 2
+    log_append "[TWGCB-01-008-0237][IGNORE] SIPX無法執行此設定，產品會使用1000以內的uid"
 fi
 # ======================================
 # TWGCB-01-008-0238
@@ -3761,6 +3815,8 @@ EOF
     else
         log_append "[TWGCB-01-008-0239][IGNORE] dconf not installed (GNOME not present)"
     fi
+#    set_flag flag_239 2
+#    log_append "[TWGCB-01-008-0239][IGNORE] 客服系統例外項目"
 fi
 # ======================================
 # TWGCB-01-008-0240
@@ -3786,7 +3842,7 @@ fi
 # 設定 login.defs UMASK=027
 if [ $flag_242 -eq 0 ]; then
     if grep -qE '^\s*UMASK\s+' /etc/login.defs 2>/dev/null; then
-        sed -i 's/^\s*UMASK\s+.*/UMASK\t027/' /etc/login.defs
+        sed -i -E 's/^\s*UMASK\s+.*/UMASK\t027/' /etc/login.defs
     else
         echo "UMASK	027" >> /etc/login.defs
     fi
@@ -3845,6 +3901,18 @@ if [ $flag_247 -eq 0 ]; then
     systemctl mask nftables 2>/dev/null
     set_flag flag_247 1
     log_append "[TWGCB-01-008-0247][FIX] disabled and masked nftables"
+fi
+# [DOCKER-COMPAT] 偵測 Docker，調整 firewalld backend
+if systemctl is-active docker &>/dev/null; then
+    if grep -q "FirewallBackend=nftables" /etc/firewalld/firewalld.conf; then
+        sed -i 's/FirewallBackend=nftables/FirewallBackend=iptables/' \
+            /etc/firewalld/firewalld.conf
+        systemctl restart firewalld
+        systemctl restart docker
+        log_append "[DOCKER-COMPAT][FIX] 偵測到 Docker，已將 firewalld backend 改為 iptables"
+    else
+        log_append "[DOCKER-COMPAT][OK] firewalld backend 已是 iptables，無需調整"
+    fi
 fi
 # ======================================
 # TWGCB-01-008-0248

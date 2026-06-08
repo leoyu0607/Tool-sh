@@ -2,23 +2,22 @@
 
 ## Ai3 QS Service Management Script For Apache-Tomcat/JBOSS Based Services by LeoYu
 #變數宣告
-User="ai3"
-ServiceDir="/home/$User/"
+User="ai3" ##必填
+ServiceDir="/home/$User/" ##必填
 AppServerType=""
 service=()
 count=1
 alert_flag=false
 
-#change user via command line argument
-while getopts "u:s:" opt; do
+#command line argument
+while getopts "u:m:" opt; do
     case $opt in
         u)
             User="$OPTARG"
             ServiceDir="/home/$User/"
             ;;
-        s)
+        m)
             cmd_service="$OPTARG"
-            qs_status $cmd_service
             ;;
         *)
             echo "Invalid option: -$OPTARG" >&2
@@ -26,6 +25,12 @@ while getopts "u:s:" opt; do
             ;;
     esac
 done
+
+# monitor cmd
+if [[ -n "$cmd_service" ]]; then
+    qs_status "$cmd_service"
+    exit 0
+fi
 
 # spinner characters used for start/stop animation
 sp="|/-\\"
@@ -39,6 +44,25 @@ fi
 if [ "$(whoami)" != "$User" ]; then
     exec sudo su - "$User" -c "$0"
 fi
+
+# 加入PATH
+_install_path() {
+    local script_path
+    script_path=$(realpath "$0")
+    local bin_dir="$HOME/.local/bin"
+    local link="${bin_dir}/ai3-service"
+
+    mkdir -p "$bin_dir"
+
+    if [ -L "$link" ]; then
+        return 0
+    fi
+
+    ln -s "$script_path" "$link"
+}
+
+_install_path
+
 # Detect available services
 if [ -d "$ServiceDir" ]; then
     for d in "$ServiceDir"/* ; do
@@ -104,6 +128,7 @@ qs_start() {
     local timeout=10
     local elapsed=0
     local idx=0
+    local waited=0
     pids=$(pgrep -f "$ServiceDir$service_name/$AppServerType" || true)
     if [ -n "$pids" ]; then
         echo "$service_name service is already running (PIDs: $pids)"
@@ -137,7 +162,7 @@ qs_start() {
             waited=$((waited + 1))
         fi
         if [ -z "$pids" ]; then
-            echo "$service_name service failed to start after ${max_wait}s; check ${ServiceDir}${service_name}/nohup.out for details"
+            echo "$service_name service failed to start after ${waited}s; check ${ServiceDir}${service_name}/nohup.out for details"
             return 1
         fi
     fi
@@ -180,6 +205,43 @@ qs_stop() {
         echo "$service_name service is not running"
     fi
 }
+
+# 共用函式：對單一或全部 instance 執行指定動作
+cmd_action() {
+    local action="$1"
+    local target="$2"
+
+    if [ "$target" = "all" ]; then
+        for svc in "${service[@]}"; do
+            "qs_${action}" "$svc"
+        done
+    else
+        if [ -z "$target" ]; then
+            echo "Error: instance name required"
+            exit 1
+        fi
+        "qs_${action}" "$target"
+    fi
+}
+# cmd操作用
+if [ -n "$1" ]; then
+    case "$1" in
+    start|stop|status)
+        cmd_action "$1" "$2"
+        exit 0
+        ;;
+    restart)
+        cmd_action "stop"  "$2"
+        cmd_action "start" "$2"
+        exit 0
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart} {instance|all}"
+        exit 1
+        ;;
+    esac
+fi
+
 while true; do
     clear
     echo "=============================="
